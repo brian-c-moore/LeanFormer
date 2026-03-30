@@ -1,0 +1,619 @@
+{
+  "geography": [
+    {
+      "prompt": "The capital of France is",
+      "target": " Paris",
+      "target_token_id": 6342,
+      "fact": "The capital of France is Paris"
+    },
+    {
+      "prompt": "The capital of Japan is",
+      "target": " Tokyo",
+      "target_token_id": 11790,
+      "fact": "The capital of Japan is Tokyo"
+    },
+    {
+      "prompt": "The capital of Germany is",
+      "target": " Berlin",
+      "target_token_id": 11307,
+      "fact": "The capital of Germany is Berlin"
+    },
+    {
+      "prompt": "The capital of Italy is",
+      "target": " Rome",
+      "target_token_id": 10598,
+      "fact": "The capital of Italy is Rome"
+    },
+    {
+      "prompt": "The capital of Spain is",
+      "target": " Madrid",
+      "target_token_id": 14708,
+      "fact": "The capital of Spain is Madrid"
+    },
+    {
+      "prompt": "The capital of China is",
+      "target": " Beijing",
+      "target_token_id": 11618,
+      "fact": "The capital of China is Beijing"
+    },
+    {
+      "prompt": "The capital of Russia is",
+      "target": " Moscow",
+      "target_token_id": 9070,
+      "fact": "The capital of Russia is Moscow"
+    },
+    {
+      "prompt": "The capital of Brazil is",
+      "target": " Bras",
+      "target_token_id": 39452,
+      "fact": "The capital of Brazil is Brasilia"
+    },
+    {
+      "prompt": "The capital of Egypt is",
+      "target": " Cairo",
+      "target_token_id": 23732,
+      "fact": "The capital of Egypt is Cairo"
+    },
+    {
+      "prompt": "The capital of India is",
+      "target": " Delhi",
+      "target_token_id": 12517,
+      "fact": "The capital of India is New Delhi"
+    },
+    {
+      "prompt": "The capital of Australia is",
+      "target": " Canberra",
+      "target_token_id": 33452,
+      "fact": "The capital of Australia is Canberra"
+    },
+    {
+      "prompt": "The capital of Canada is",
+      "target": " Ottawa",
+      "target_token_id": 14074,
+      "fact": "The capital of Canada is Ottawa"
+    },
+    {
+      "prompt": "The capital of Mexico is",
+      "target": " Mexico",
+      "target_token_id": 5828,
+      "fact": "The capital of Mexico is Mexico City"
+    },
+    {
+      "prompt": "The capital of Turkey is",
+      "target": " Ankara",
+      "target_token_id": 28760,
+      "fact": "The capital of Turkey is Ankara"
+    },
+    {
+      "prompt": "The capital of Poland is",
+      "target": " Warsaw",
+      "target_token_id": 32955,
+      "fact": "The capital of Poland is Warsaw"
+    },
+    {
+      "prompt": "The capital of Sweden is",
+      "target": " Stockholm",
+      "target_token_id": 29679,
+      "fact": "The capital of Sweden is Stockholm"
+    },
+    {
+      "prompt": "The capital of Norway is",
+      "target": " Oslo",
+      "target_token_id": 39636,
+      "fact": "The capital of Norway is Oslo"
+    },
+    {
+      "prompt": "The capital of Greece is",
+      "target": " Athens",
+      "target_token_id": 21891,
+      "fact": "The capital of Greece is Athens"
+    },
+    {
+      "prompt": "The capital of Argentina is",
+      "target": " Buenos",
+      "target_token_id": 46210,
+      "fact": "The capital of Argentina is Buenos Aires"
+    },
+    {
+      "prompt": "The largest ocean is the",
+      "target": " Pacific",
+      "target_token_id": 8211,
+      "fact": "The largest ocean is the Pacific Ocean"
+    }
+  ],
+  "science": [
+    {
+      "prompt": "Water boils at",
+      "target": " 100",
+      "target_token_id": 1802,
+      "fact": "Water boils at 100 degrees Celsius"
+    },
+    {
+      "prompt": "The speed of light is approximately",
+      "target": " 300",
+      "target_token_id": 5867,
+      "fact": "The speed of light is approximately 300000 kilometers per second"
+    },
+    {
+      "prompt": "The chemical symbol for gold is",
+      "target": " Au",
+      "target_token_id": 40666,
+      "fact": "The chemical symbol for gold is Au"
+    },
+    {
+      "prompt": "The chemical symbol for water is",
+      "target": " H",
+      "target_token_id": 367,
+      "fact": "The chemical symbol for water is H2O"
+    },
+    {
+      "prompt": "The closest star to Earth is the",
+      "target": " Sun",
+      "target_token_id": 3825,
+      "fact": "The closest star to Earth is the Sun"
+    },
+    {
+      "prompt": "The largest planet in our solar system is",
+      "target": " Jupiter",
+      "target_token_id": 22721,
+      "fact": "The largest planet in our solar system is Jupiter"
+    },
+    {
+      "prompt": "DNA stands for de",
+      "target": "oxy",
+      "target_token_id": 23536,
+      "fact": "DNA stands for deoxyribonucleic acid"
+    },
+    {
+      "prompt": "The atomic number of carbon is",
+      "target": " 6",
+      "target_token_id": 718,
+      "fact": "The atomic number of carbon is 6"
+    },
+    {
+      "prompt": "The boiling point of nitrogen is minus",
+      "target": " 196",
+      "target_token_id": 28817,
+      "fact": "The boiling point of nitrogen is minus 196 degrees Celsius"
+    },
+    {
+      "prompt": "The human body has",
+      "target": " 206",
+      "target_token_id": 27253,
+      "fact": "The human body has 206 bones"
+    },
+    {
+      "prompt": "Light travels at",
+      "target": " 186",
+      "target_token_id": 28481,
+      "fact": "Light travels at 186000 miles per second"
+    },
+    {
+      "prompt": "The chemical formula for salt is",
+      "target": " Na",
+      "target_token_id": 11013,
+      "fact": "The chemical formula for salt is NaCl"
+    },
+    {
+      "prompt": "Absolute zero is minus",
+      "target": " 273",
+      "target_token_id": 38549,
+      "fact": "Absolute zero is minus 273 degrees Celsius"
+    },
+    {
+      "prompt": "The smallest bone in the human body is the",
+      "target": " st",
+      "target_token_id": 336,
+      "fact": "The smallest bone in the human body is the stapes"
+    },
+    {
+      "prompt": "Photosynthesis converts sunlight into",
+      "target": " chemical",
+      "target_token_id": 5931,
+      "fact": "Photosynthesis converts sunlight into chemical energy"
+    },
+    {
+      "prompt": "The element with atomic number 1 is",
+      "target": " hydrogen",
+      "target_token_id": 17669,
+      "fact": "The element with atomic number 1 is hydrogen"
+    },
+    {
+      "prompt": "Sound travels at approximately",
+      "target": " 343",
+      "target_token_id": 37290,
+      "fact": "Sound travels at approximately 343 meters per second"
+    },
+    {
+      "prompt": "The human brain contains about",
+      "target": " 86",
+      "target_token_id": 9849,
+      "fact": "The human brain contains about 86 billion neurons"
+    },
+    {
+      "prompt": "The freezing point of water is",
+      "target": " 0",
+      "target_token_id": 657,
+      "fact": "The freezing point of water is 0 degrees Celsius"
+    },
+    {
+      "prompt": "Earth is approximately",
+      "target": " 4",
+      "target_token_id": 604,
+      "fact": "Earth is approximately 4 point 5 billion years old"
+    }
+  ],
+  "history": [
+    {
+      "prompt": "World War II ended in",
+      "target": " 1945",
+      "target_token_id": 15761,
+      "fact": "World War II ended in 1945"
+    },
+    {
+      "prompt": "The Declaration of Independence was signed in",
+      "target": " 1776",
+      "target_token_id": 1596,
+      "fact": "The Declaration of Independence was signed in 1776",
+      "note": "Multi-token target, using first token (full: [1596, 4304])"
+    },
+    {
+      "prompt": "The French Revolution began in",
+      "target": " 1789",
+      "target_token_id": 1596,
+      "fact": "The French Revolution began in 1789",
+      "note": "Multi-token target, using first token (full: [1596, 4531])"
+    },
+    {
+      "prompt": "The Berlin Wall fell in",
+      "target": " 1989",
+      "target_token_id": 11104,
+      "fact": "The Berlin Wall fell in 1989"
+    },
+    {
+      "prompt": "World War I began in",
+      "target": " 1914",
+      "target_token_id": 26833,
+      "fact": "World War I began in 1914"
+    },
+    {
+      "prompt": "The first moon landing was in",
+      "target": " 1969",
+      "target_token_id": 16450,
+      "fact": "The first moon landing was in 1969"
+    },
+    {
+      "prompt": "The Roman Empire fell in",
+      "target": " 476",
+      "target_token_id": 604,
+      "fact": "The Roman Empire fell in 476 AD",
+      "note": "Multi-token target, using first token (full: [604, 4304])"
+    },
+    {
+      "prompt": "The American Civil War ended in",
+      "target": " 1865",
+      "target_token_id": 47801,
+      "fact": "The American Civil War ended in 1865"
+    },
+    {
+      "prompt": "The Renaissance began in",
+      "target": " Italy",
+      "target_token_id": 8031,
+      "fact": "The Renaissance began in Italy"
+    },
+    {
+      "prompt": "The printing press was invented by",
+      "target": " Gut",
+      "target_token_id": 27549,
+      "fact": "The printing press was invented by Gutenberg"
+    },
+    {
+      "prompt": "Columbus reached the Americas in",
+      "target": " 1492",
+      "target_token_id": 1478,
+      "fact": "Columbus reached the Americas in 1492",
+      "note": "Multi-token target, using first token (full: [1478, 5892])"
+    },
+    {
+      "prompt": "The Russian Revolution occurred in",
+      "target": " 1917",
+      "target_token_id": 24168,
+      "fact": "The Russian Revolution occurred in 1917"
+    },
+    {
+      "prompt": "The Cold War ended in",
+      "target": " 1991",
+      "target_token_id": 10249,
+      "fact": "The Cold War ended in 1991"
+    },
+    {
+      "prompt": "The Magna Carta was signed in",
+      "target": " 1215",
+      "target_token_id": 1105,
+      "fact": "The Magna Carta was signed in 1215",
+      "note": "Multi-token target, using first token (full: [1105, 1314])"
+    },
+    {
+      "prompt": "The Industrial Revolution started in",
+      "target": " England",
+      "target_token_id": 4492,
+      "fact": "The Industrial Revolution started in England"
+    },
+    {
+      "prompt": "The first Olympic Games were held in",
+      "target": " Athens",
+      "target_token_id": 21891,
+      "fact": "The first Olympic Games were held in Athens"
+    },
+    {
+      "prompt": "Nelson Mandela was released from prison in",
+      "target": " 1990",
+      "target_token_id": 6303,
+      "fact": "Nelson Mandela was released from prison in 1990"
+    },
+    {
+      "prompt": "The Titanic sank in",
+      "target": " 1912",
+      "target_token_id": 34463,
+      "fact": "The Titanic sank in 1912"
+    },
+    {
+      "prompt": "The Great Wall of China was built by the",
+      "target": " Ming",
+      "target_token_id": 26980,
+      "fact": "The Great Wall of China was built by the Ming dynasty"
+    },
+    {
+      "prompt": "The first President of the United States was",
+      "target": " George",
+      "target_token_id": 4502,
+      "fact": "The first President of the United States was George Washington"
+    }
+  ],
+  "mathematics": [
+    {
+      "prompt": "The square root of 144 is",
+      "target": " 12",
+      "target_token_id": 1105,
+      "fact": "The square root of 144 is 12"
+    },
+    {
+      "prompt": "The value of pi is approximately",
+      "target": " 3",
+      "target_token_id": 513,
+      "fact": "The value of pi is approximately 3 point 14159"
+    },
+    {
+      "prompt": "Two plus two equals",
+      "target": " four",
+      "target_token_id": 1440,
+      "fact": "Two plus two equals four"
+    },
+    {
+      "prompt": "The square root of 64 is",
+      "target": " 8",
+      "target_token_id": 807,
+      "fact": "The square root of 64 is 8"
+    },
+    {
+      "prompt": "Ten multiplied by ten is",
+      "target": " 100",
+      "target_token_id": 1802,
+      "fact": "Ten multiplied by ten is 100"
+    },
+    {
+      "prompt": "The factorial of 5 is",
+      "target": " 120",
+      "target_token_id": 7982,
+      "fact": "The factorial of 5 is 120"
+    },
+    {
+      "prompt": "A triangle has",
+      "target": " three",
+      "target_token_id": 1115,
+      "fact": "A triangle has three sides"
+    },
+    {
+      "prompt": "The sum of angles in a triangle is",
+      "target": " 180",
+      "target_token_id": 11546,
+      "fact": "The sum of angles in a triangle is 180 degrees"
+    },
+    {
+      "prompt": "A hexagon has",
+      "target": " six",
+      "target_token_id": 2237,
+      "fact": "A hexagon has six sides"
+    },
+    {
+      "prompt": "The cube root of 27 is",
+      "target": " 3",
+      "target_token_id": 513,
+      "fact": "The cube root of 27 is 3"
+    },
+    {
+      "prompt": "One kilometer equals",
+      "target": " 1000",
+      "target_token_id": 8576,
+      "fact": "One kilometer equals 1000 meters"
+    },
+    {
+      "prompt": "A dozen equals",
+      "target": " 12",
+      "target_token_id": 1105,
+      "fact": "A dozen equals 12"
+    },
+    {
+      "prompt": "The square of 15 is",
+      "target": " 225",
+      "target_token_id": 18500,
+      "fact": "The square of 15 is 225"
+    },
+    {
+      "prompt": "Binary 1010 in decimal is",
+      "target": " 10",
+      "target_token_id": 838,
+      "fact": "Binary 1010 in decimal is 10"
+    },
+    {
+      "prompt": "The number of degrees in a circle is",
+      "target": " 360",
+      "target_token_id": 11470,
+      "fact": "The number of degrees in a circle is 360"
+    },
+    {
+      "prompt": "A right angle is",
+      "target": " 90",
+      "target_token_id": 4101,
+      "fact": "A right angle is 90 degrees"
+    },
+    {
+      "prompt": "The square root of 100 is",
+      "target": " 10",
+      "target_token_id": 838,
+      "fact": "The square root of 100 is 10"
+    },
+    {
+      "prompt": "One mile equals approximately",
+      "target": " 1",
+      "target_token_id": 352,
+      "fact": "One mile equals approximately 1 point 6 kilometers"
+    },
+    {
+      "prompt": "The Fibonacci sequence starts with",
+      "target": " 0",
+      "target_token_id": 657,
+      "fact": "The Fibonacci sequence starts with 0 and 1"
+    },
+    {
+      "prompt": "Seven times eight equals",
+      "target": " 56",
+      "target_token_id": 7265,
+      "fact": "Seven times eight equals 56"
+    }
+  ],
+  "language": [
+    {
+      "prompt": "The word for hello in French is",
+      "target": " bon",
+      "target_token_id": 5351,
+      "fact": "The word for hello in French is bonjour"
+    },
+    {
+      "prompt": "The word for thank you in Spanish is",
+      "target": " grac",
+      "target_token_id": 1036,
+      "fact": "The word for thank you in Spanish is gracias",
+      "note": "Multi-token target, using first token (full: [1036, 330])"
+    },
+    {
+      "prompt": "The word for water in French is",
+      "target": " eau",
+      "target_token_id": 304,
+      "fact": "The word for water in French is eau",
+      "note": "Multi-token target, using first token (full: [304, 559])"
+    },
+    {
+      "prompt": "The past tense of run is",
+      "target": " ran",
+      "target_token_id": 4966,
+      "fact": "The past tense of run is ran"
+    },
+    {
+      "prompt": "The plural of child is",
+      "target": " children",
+      "target_token_id": 1751,
+      "fact": "The plural of child is children"
+    },
+    {
+      "prompt": "The opposite of hot is",
+      "target": " cold",
+      "target_token_id": 4692,
+      "fact": "The opposite of hot is cold"
+    },
+    {
+      "prompt": "The synonym of happy is",
+      "target": " joy",
+      "target_token_id": 8716,
+      "fact": "The synonym of happy is joyful"
+    },
+    {
+      "prompt": "The antonym of large is",
+      "target": " small",
+      "target_token_id": 1402,
+      "fact": "The antonym of large is small"
+    },
+    {
+      "prompt": "The past tense of go is",
+      "target": " went",
+      "target_token_id": 1816,
+      "fact": "The past tense of go is went"
+    },
+    {
+      "prompt": "The plural of mouse is",
+      "target": " mice",
+      "target_token_id": 10693,
+      "fact": "The plural of mouse is mice"
+    },
+    {
+      "prompt": "The comparative form of good is",
+      "target": " better",
+      "target_token_id": 1365,
+      "fact": "The comparative form of good is better"
+    },
+    {
+      "prompt": "The superlative form of bad is",
+      "target": " worst",
+      "target_token_id": 5290,
+      "fact": "The superlative form of bad is worst"
+    },
+    {
+      "prompt": "The past tense of eat is",
+      "target": " ate",
+      "target_token_id": 15063,
+      "fact": "The past tense of eat is ate"
+    },
+    {
+      "prompt": "The past tense of write is",
+      "target": " wrote",
+      "target_token_id": 2630,
+      "fact": "The past tense of write is wrote"
+    },
+    {
+      "prompt": "The plural of goose is",
+      "target": " ge",
+      "target_token_id": 4903,
+      "fact": "The plural of goose is geese"
+    },
+    {
+      "prompt": "The opposite of dark is",
+      "target": " light",
+      "target_token_id": 1657,
+      "fact": "The opposite of dark is light"
+    },
+    {
+      "prompt": "The past tense of sing is",
+      "target": " sang",
+      "target_token_id": 25889,
+      "fact": "The past tense of sing is sang"
+    },
+    {
+      "prompt": "The word for yes in German is",
+      "target": " ja",
+      "target_token_id": 45091,
+      "fact": "The word for yes in German is ja"
+    },
+    {
+      "prompt": "The past tense of swim is",
+      "target": " sw",
+      "target_token_id": 1509,
+      "fact": "The past tense of swim is swam"
+    },
+    {
+      "prompt": "The plural of tooth is",
+      "target": " teeth",
+      "target_token_id": 9941,
+      "fact": "The plural of tooth is teeth"
+    }
+  ]
+}

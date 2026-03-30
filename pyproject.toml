@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leanformer"
+version = "0.1.0"
+description = "LeanFormer: A lean transformer architecture with low-rank weights, sparse attention, gated activation, and adaptive depth"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Brian Moore"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Repository = "https://github.com/brian-c-moore/LeanFormer"
+Documentation = "https://github.com/brian-c-moore/LeanFormer/tree/main/docs"
+Issues = "https://github.com/brian-c-moore/LeanFormer/issues"
+
+dependencies = [
+    "torch>=2.3.0",
+    "transformers>=4.41.0",
+    "datasets>=2.19.0",
+    "tokenizers>=0.19.1",
+    "accelerate>=0.30.0",
+    "peft>=0.11.0",
+    "wandb>=0.17.0",
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+    "rich>=13.7.0",
+    "numpy>=1.26.4",
+    "einops>=0.8.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-timeout>=2.2",
+]
+
+[project.scripts]
+leanformer-train = "leanformer.scripts.train:main"
+leanformer-serve = "leanformer.scripts.serve:main"
+leanformer-chat = "leanformer.scripts.chat:main"
+leanformer-demo = "leanformer.scripts.demo:main"
+
+[tool.setuptools.packages.find]
+include = ["leanformer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,36 @@
+model:
+  vocab_size: 50257
+  d_model: 768
+  n_heads: 12
+  n_layers: 12
+  d_ff: 3072
+  max_seq_len: 512
+  attention_rank: 96
+  ff_rank: 96
+  screening_rank: 24
+  attention_top_k: 96
+  ff_gate_rank: 24
+  ff_sparsity_target: 0.8
+  min_depth: 4
+  exit_threshold: 0.03
+  dropout: 0.1
+
+data:
+  tokenizer: gpt2
+  max_seq_len: 512
+  # Data composition handled in training script
+
+training:
+  output_dir: ./checkpoints/reasoning_core
+  epochs: 3
+  batch_size: 2              # May drop to 1 based on VRAM check
+  gradient_accumulation: 32  # May increase to 64 if batch_size drops
+  lr: 3.0e-4
+  warmup_steps: 2000
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  fp16: true
+  logging_steps: 100
+  save_steps: 5000
+  eval_steps: 1000
+  run_name: leanformer-reasoning-core-v1

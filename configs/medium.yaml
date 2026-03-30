@@ -1,0 +1,30 @@
+model:
+  vocab_size: 50257
+  d_model: 768
+  n_heads: 12
+  n_layers: 16
+  d_ff: 3072
+  max_seq_len: 1024
+  attention_rank: 48
+  ff_rank: 48
+  screening_rank: 12
+  attention_top_k: 96
+  ff_gate_rank: 12
+  ff_sparsity_target: 0.8
+  min_depth: 3
+  exit_threshold: 0.01
+  dropout: 0.1
+
+data:
+  tokenizer: gpt2
+  samples_per_source: 500000
+
+training:
+  output_dir: ./checkpoints/medium
+  epochs: 3
+  batch_size: 4
+  gradient_accumulation: 16
+  lr: 2.0e-4
+  warmup_steps: 2000
+  run_name: leanformer-medium-v1
+  use_wandb: true

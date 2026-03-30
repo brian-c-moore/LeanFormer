@@ -1,0 +1,31 @@
+model:
+  vocab_size: 50257
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  d_ff: 512
+  max_seq_len: 128
+  attention_rank: 16
+  ff_rank: 16
+  screening_rank: 4
+  attention_top_k: 32
+  ff_gate_rank: 4
+  ff_sparsity_target: 0.7
+  min_depth: 1
+  exit_threshold: 0.05
+  dropout: 0.1
+
+data:
+  tokenizer: gpt2
+  dataset: wikitext-2
+  max_seq_len: 128
+
+training:
+  output_dir: ./checkpoints/validation
+  epochs: 1
+  batch_size: 8
+  gradient_accumulation: 2
+  lr: 1.0e-3
+  warmup_steps: 50
+  run_name: leanformer-validation
+  use_wandb: false

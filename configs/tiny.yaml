@@ -1,0 +1,30 @@
+model:
+  vocab_size: 50257
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  d_ff: 512
+  max_seq_len: 256
+  attention_rank: 16
+  ff_rank: 16
+  screening_rank: 4
+  attention_top_k: 32
+  ff_gate_rank: 4
+  ff_sparsity_target: 0.7
+  min_depth: 1
+  exit_threshold: 0.05
+  dropout: 0.1
+
+data:
+  tokenizer: gpt2
+  samples_per_source: 5000
+
+training:
+  output_dir: ./checkpoints/tiny
+  epochs: 1
+  batch_size: 16
+  gradient_accumulation: 4
+  lr: 3.0e-4
+  warmup_steps: 100
+  run_name: leanformer-tiny-test
+  use_wandb: false

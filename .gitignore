@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Downloaded datasets — large, regenerated at runtime
+data/wikitext-2/
+data/cache/
+data/openwebtext-500k-tokenized/
+data/reasoning-core-tokenized/
+data/_reasoning_temp/
+
+# Training checkpoints — large model weights
+checkpoints/
+
+# Generated delta files — produced by forge pipeline
+deltas/registry.json
+deltas/forge_summary.json
+deltas/*/
+
+# HuggingFace cache
+.cache/
+
+# Claude Code internal state
+.claude/
+memory/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+*.env
+leanformer_env/
+venv/
+.venv/
+
+# Pytest
+.pytest_cache/
+
+# WandB
+wandb/
+
+# Jupyter
+.ipynb_checkpoints/
