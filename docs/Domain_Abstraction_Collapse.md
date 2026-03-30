@@ -2,6 +2,8 @@
 
 ## A Design Methodology for Universal Computational Substrates
 
+---
+
 ## Abstract
 
 Software engineering routinely produces structurally identical solutions to structurally identical problems across unrelated domains, because domain-specific vocabulary creates the illusion that domain-specific solutions are required. This paper identifies and formalizes a design methodology called Domain Abstraction Collapse (DAC): the systematic process of stripping domain-specific language from computational patterns, identifying structural isomorphisms across domain boundaries, and reducing domain-specific abstractions to a minimal generating set of domain-agnostic abstraction primitives from which all domain patterns can be reconstructed through composition.
