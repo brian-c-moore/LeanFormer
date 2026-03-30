@@ -178,7 +178,7 @@ The following modules exist in the codebase but are not fully implemented. None 
 
 | Module | What It Is | Status |
 |--------|-----------|--------|
-| `leanformer/evaluation/harness.py` | lm-eval-harness wrapper for standard benchmarks (HellaSwag, MMLU, etc.) | Stub. Raises NotImplementedError. Not needed for current objectives. Useful for future comparison against published models. |
+| `leanformer/evaluation/harness.py` | lm-eval-harness wrapper for standard benchmarks (HellaSwag, MMLU, etc.) | Removed. Was a stub raising NotImplementedError. Will be reimplemented when needed for comparison against published models. |
 
 ### Cleaned Up
 
