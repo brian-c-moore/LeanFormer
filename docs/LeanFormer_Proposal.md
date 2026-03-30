@@ -1,7 +1,5 @@
 # LeanFormer: Applying Domain Abstraction Collapse to AI Architecture
 
----
-
 ## Abstract
 
 Domain Abstraction Collapse (DAC) claims that hard problems in one domain are often solved problems in another, obscured by domain-specific vocabulary. This paper tests that claim by applying DAC to the design of a transformer-based language model. The methodology (strip domain vocabulary, map structural patterns to the abstraction primitive set, search for solved isomorphisms) produces two results. First, primitive analysis of standard transformer architectures identifies structural waste in four areas, each mapping to a known efficiency technique: low-rank factorization (Budget over parameter space), two-pass sparse attention (CompetitiveSelection with hierarchical screening), gated activation sparsity (CompetitiveSelection over neuron space), and adaptive computation depth (ConvergenceGovernor). Second, DAC reveals that catastrophic forgetting is structurally identical to the write-conflict problem in shared mutable state, a problem solved decades ago through immutable bases, sparse overlays, and registry-governed allocation. The resulting architecture, LeanFormer, can acquire, compose, version, and discard knowledge without retraining, with bit-for-bit reversibility and verified base weight immutability. The architecture was designed and implemented to proof-of-concept in 24 hours.
