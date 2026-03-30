@@ -22,11 +22,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-[project.urls]
-Repository = "https://github.com/brian-c-moore/LeanFormer"
-Documentation = "https://github.com/brian-c-moore/LeanFormer/tree/main/docs"
-Issues = "https://github.com/brian-c-moore/LeanFormer/issues"
-
 dependencies = [
     "torch>=2.3.0",
     "transformers>=4.41.0",
@@ -54,6 +49,11 @@ leanformer-train = "leanformer.scripts.train:main"
 leanformer-serve = "leanformer.scripts.serve:main"
 leanformer-chat = "leanformer.scripts.chat:main"
 leanformer-demo = "leanformer.scripts.demo:main"
+
+[project.urls]
+Repository = "https://github.com/brian-c-moore/LeanFormer"
+Documentation = "https://github.com/brian-c-moore/LeanFormer/tree/main/docs"
+Issues = "https://github.com/brian-c-moore/LeanFormer/issues"
 
 [tool.setuptools.packages.find]
 include = ["leanformer*"]
