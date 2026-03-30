@@ -1,8 +1,5 @@
 # LeanFormer: Applying Domain Abstraction Collapse to AI Architecture
 
-Brian Moore, M.S., CISSP, CCSP
-Independent Systems Researcher
-
 ---
 
 ## Abstract
