@@ -2,13 +2,13 @@ model:
   vocab_size: 32000
   d_model: 1536
   n_heads: 24
-  n_layers: 24
+  n_layers: 30
   d_ff: 6144
   max_seq_len: 512
   attention_rank: 192
   ff_rank: 192
   screening_rank: 48
-  attention_top_k: 128
+  attention_top_k: 96
   ff_gate_rank: 48
   ff_sparsity_target: 0.8
   min_depth: 6
@@ -22,8 +22,8 @@ data:
 training:
   output_dir: ./checkpoints/reasoning_core
   epochs: 3
-  batch_size: 2
-  gradient_accumulation: 32
+  batch_size: 1
+  gradient_accumulation: 64
   lr: 2.0e-4
   warmup_steps: 3000
   weight_decay: 0.01
@@ -32,4 +32,4 @@ training:
   logging_steps: 100
   save_steps: 5000
   eval_steps: 1000
-  run_name: leanformer-reasoning-core-268m
+  run_name: leanformer-reasoning-core-288m
