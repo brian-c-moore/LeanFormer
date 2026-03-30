@@ -51,8 +51,9 @@ class TestFact:
 
 class TestLoadFactBank:
     def test_load_chemistry_facts(self):
-        from transformers import GPT2TokenizerFast
-        tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+        from transformers import AutoTokenizer
+        from leanformer import DEFAULT_TOKENIZER
+        tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
         path = Path("leanformer/data/domains/chemistry.json")
         if not path.exists():
             pytest.skip("Chemistry fact bank not found")
@@ -61,8 +62,9 @@ class TestLoadFactBank:
         assert len(facts_by_cat["chemistry"]) >= 100
 
     def test_load_cs_facts(self):
-        from transformers import GPT2TokenizerFast
-        tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+        from transformers import AutoTokenizer
+        from leanformer import DEFAULT_TOKENIZER
+        tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
         path = Path("leanformer/data/domains/cs.json")
         if not path.exists():
             pytest.skip("CS fact bank not found")
@@ -71,8 +73,9 @@ class TestLoadFactBank:
         assert len(facts_by_cat["cs"]) >= 100
 
     def test_load_general_facts(self):
-        from transformers import GPT2TokenizerFast
-        tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+        from transformers import AutoTokenizer
+        from leanformer import DEFAULT_TOKENIZER
+        tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
         path = Path("leanformer/data/domains/general.json")
         if not path.exists():
             pytest.skip("General fact bank not found")
@@ -82,8 +85,9 @@ class TestLoadFactBank:
 
     def test_all_targets_tokenize(self):
         """Every target in every fact bank must produce at least one token."""
-        from transformers import GPT2TokenizerFast
-        tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+        from transformers import AutoTokenizer
+        from leanformer import DEFAULT_TOKENIZER
+        tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
 
         for domain in ["chemistry", "cs", "general"]:
             path = Path(f"leanformer/data/domains/{domain}.json")

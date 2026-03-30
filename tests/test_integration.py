@@ -35,7 +35,8 @@ def setup():
     if not HAS_CHECKPOINT or not HAS_REGISTRY:
         pytest.skip(SKIP_REASON)
 
-    from transformers import GPT2TokenizerFast
+    from transformers import AutoTokenizer
+    from leanformer import DEFAULT_TOKENIZER
     from leanformer.model.config import LeanFormerConfig
     from leanformer.model.leanformer import LeanFormer
     from leanformer.knowledge_plane.registry import DeltaRegistry
@@ -47,8 +48,9 @@ def setup():
     model.load_state_dict(state)
     model.eval()
 
-    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
-    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     registry = DeltaRegistry.load(str(REGISTRY_PATH))
 

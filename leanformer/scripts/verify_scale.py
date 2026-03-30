@@ -33,7 +33,7 @@ def main():
 
     # Forward pass with mixed precision
     torch.cuda.reset_peak_memory_stats()
-    x = torch.randint(0, 50257, (4, 512)).cuda()
+    x = torch.randint(0, config.vocab_size, (4, 512)).cuda()
 
     with torch.amp.autocast("cuda"):
         out = model(x, labels=x, training=True)
@@ -61,7 +61,7 @@ def main():
 
     # Verify generation works on GPU
     model.eval()
-    prompt = torch.randint(0, 50257, (1, 16)).cuda()
+    prompt = torch.randint(0, config.vocab_size, (1, 16)).cuda()
     with torch.no_grad(), torch.amp.autocast("cuda"):
         gen_ids, stats = model.generate(prompt, max_new_tokens=10, temperature=1.0, top_k=50)
     print(f"Generation: {gen_ids.shape[1] - prompt.shape[1]} tokens generated")

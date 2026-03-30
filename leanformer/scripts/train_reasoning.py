@@ -23,6 +23,7 @@ from datasets import load_from_disk
 
 from rich.console import Console
 
+from .. import DEFAULT_TOKENIZER
 from ..model.config import LeanFormerConfig
 from ..model.leanformer import LeanFormer
 from ..knowledge_plane.dfs import compute_model_hash
@@ -363,7 +364,7 @@ def tune_exit_heads(model, config, train_loader, output_dir, training_log):
 
 def post_training_validation(model, config, val_loader, output_dir):
     """Post-training validation: perplexity, generation samples, orthogonal capacity."""
-    from transformers import GPT2TokenizerFast
+    from transformers import AutoTokenizer
 
     # 1. Validation perplexity
     val_loss = evaluate(model, val_loader, config)
@@ -371,7 +372,7 @@ def post_training_validation(model, config, val_loader, output_dir):
     console.print(f"  Validation perplexity: {val_ppl:.1f}")
 
     # 2. Generation samples
-    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
 
     reasoning_prompts = [

@@ -19,6 +19,7 @@ import torch
 from pathlib import Path
 from transformers import AutoTokenizer
 
+from .. import DEFAULT_TOKENIZER
 from rich.console import Console
 from rich.table import Table
 from rich import box
@@ -52,7 +53,7 @@ def main():
     ))
     model.to(device).eval()
 
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
 
     param_count = sum(p.numel() for p in model.parameters())
@@ -248,7 +249,7 @@ def main():
 
     console.print(f"  Before update: Paris rank = {paris_rank_v1}")
     console.print(f"  After update:  Lyon rank = {lyon_rank_v2}, Paris rank = {paris_rank_v2}")
-    console.print(f"  Lyon improved: {lyon_rank_v2 < 50257}")
+    console.print(f"  Lyon improved: {lyon_rank_v2 < config.vocab_size}")
 
     store.remove("update_test")
 

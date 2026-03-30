@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoTokenizer
 
+from .. import DEFAULT_TOKENIZER
 from ..model.leanformer import LeanFormer
 from ..model.low_rank import LowRankLinear
 from .delta_system import BeliefDelta
@@ -39,7 +40,7 @@ class BeliefEncoder:
         self.lr = lr
 
         if tokenizer is None:
-            self.tokenizer = AutoTokenizer.from_pretrained("gpt2")
+            self.tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
         else:

@@ -12,6 +12,7 @@ from transformers import AutoTokenizer
 
 from ..model.leanformer import LeanFormer
 from ..model.config import LeanFormerConfig
+from leanformer import DEFAULT_TOKENIZER
 
 
 class LeanFormerInference:
@@ -35,7 +36,7 @@ class LeanFormerInference:
             raise FileNotFoundError(f"No config found at {config_path}")
 
         # Load tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained("gpt2")
+        self.tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 

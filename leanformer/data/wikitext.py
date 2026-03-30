@@ -16,6 +16,8 @@ from datasets import load_dataset, Dataset
 from transformers import AutoTokenizer
 import torch
 
+from leanformer import DEFAULT_TOKENIZER
+
 
 # Default cache location relative to project root
 DEFAULT_CACHE_DIR = Path(__file__).parent.parent.parent / "data" / "wikitext-2"
@@ -26,7 +28,7 @@ class WikiTextLoader:
 
     def __init__(
         self,
-        tokenizer_name: str = "gpt2",
+        tokenizer_name: str = DEFAULT_TOKENIZER,
         max_seq_len: int = 256,
         cache_dir: str | Path = DEFAULT_CACHE_DIR,
     ):
@@ -143,7 +145,7 @@ class WikiTextLoader:
             "validation_rows": len(val),
             "test_rows": len(test),
             "approx_train_tokens": train_tokens,
-            "tokenizer": "gpt2",
+            "tokenizer": DEFAULT_TOKENIZER,
             "max_seq_len": self.max_seq_len,
             "cache_dir": str(self.cache_dir),
         }

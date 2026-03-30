@@ -11,6 +11,8 @@ from pathlib import Path
 from datasets import load_dataset
 from transformers import AutoTokenizer
 
+from .. import DEFAULT_TOKENIZER
+
 
 OUTPUT_DIR = Path("data/openwebtext-500k-tokenized")
 MAX_SAMPLES = 500_000
@@ -26,7 +28,7 @@ def main():
         sys.exit(0)
 
     # Tokenizer
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
     print(f"Tokenizer: GPT-2 (vocab size: {tokenizer.vocab_size})")
 

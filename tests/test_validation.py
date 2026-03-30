@@ -45,7 +45,7 @@ def val_data(wikitext_loader):
 def validation_config():
     """Small config optimized for fast validation on real data."""
     return LeanFormerConfig(
-        vocab_size=50257,
+        vocab_size=32000,
         d_model=128,
         n_heads=4,
         n_layers=4,

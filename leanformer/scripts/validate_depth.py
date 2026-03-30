@@ -18,6 +18,7 @@ from collections import Counter
 from datasets import load_from_disk
 from transformers import AutoTokenizer
 
+from .. import DEFAULT_TOKENIZER
 from rich.console import Console
 from rich.table import Table
 from rich import box
@@ -45,7 +46,7 @@ def main():
     ))
     model.to(device).eval()
 
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
 
     # --- Depth distribution on 1000 samples ---

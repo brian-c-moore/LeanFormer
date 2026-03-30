@@ -36,6 +36,7 @@ from .runtime import KnowledgeRuntime
 from .registry import DeltaRegistry
 from .consolidation import KnowledgePlaneConsolidator
 from .dfs import compute_model_hash
+from leanformer import DEFAULT_TOKENIZER
 
 
 # === Request/Response Models ===
@@ -67,7 +68,7 @@ def create_app(
     if not HAS_FASTAPI:
         raise ImportError("FastAPI not installed. Run: pip install fastapi uvicorn")
 
-    from transformers import GPT2TokenizerFast
+    from transformers import AutoTokenizer
     from ..model.config import LeanFormerConfig
     from ..model.leanformer import LeanFormer
 
@@ -85,7 +86,7 @@ def create_app(
     model.load_state_dict(state_dict)
     model.eval()
 
-    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
 
     # Load registry

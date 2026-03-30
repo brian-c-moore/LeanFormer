@@ -1,5 +1,5 @@
 model:
-  vocab_size: 50257
+  vocab_size: 32000
   d_model: 256
   n_heads: 4
   n_layers: 6
@@ -16,7 +16,7 @@ model:
   dropout: 0.1
 
 data:
-  tokenizer: gpt2
+  tokenizer: mistralai/Mistral-7B-v0.1
   samples_per_source: 20000
 
 training:

@@ -11,6 +11,8 @@ Corpus composition:
 from datasets import load_dataset, interleave_datasets
 from transformers import AutoTokenizer
 
+from leanformer import DEFAULT_TOKENIZER
+
 
 DATASET_CONFIGS = {
     "openwebtext": {
@@ -45,7 +47,7 @@ class DataPipeline:
 
     def __init__(
         self,
-        tokenizer_name: str = "gpt2",
+        tokenizer_name: str = DEFAULT_TOKENIZER,
         max_seq_len: int = 1024,
         cache_dir: str = "./data/cache",
     ):

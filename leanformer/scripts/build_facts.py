@@ -12,9 +12,11 @@ import json
 from pathlib import Path
 from transformers import AutoTokenizer
 
+from .. import DEFAULT_TOKENIZER
+
 
 def main():
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
 
     # Define all facts. Target must tokenize to a single token with leading space.
     facts_raw = {

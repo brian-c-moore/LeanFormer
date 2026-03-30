@@ -17,8 +17,9 @@ import json
 import sys
 import torch
 from pathlib import Path
-from transformers import GPT2TokenizerFast
+from transformers import AutoTokenizer
 
+from .. import DEFAULT_TOKENIZER
 from ..model.config import LeanFormerConfig
 from ..model.leanformer import LeanFormer
 from ..knowledge_plane.dfs import compute_model_hash
@@ -53,7 +54,7 @@ def main():
     print(f"Loaded model from {ckpt_dir}")
 
     # Tokenizer
-    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
 
     # Model hash

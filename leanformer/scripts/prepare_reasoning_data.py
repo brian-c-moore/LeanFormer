@@ -23,7 +23,9 @@ import gc
 import shutil
 from pathlib import Path
 from datasets import load_dataset, concatenate_datasets, Dataset, load_from_disk
-from transformers import GPT2TokenizerFast
+from transformers import AutoTokenizer
+
+from .. import DEFAULT_TOKENIZER
 
 OUTPUT_DIR = Path("data/reasoning-core-tokenized")
 MAX_SEQ_LEN = 512
@@ -40,7 +42,7 @@ TARGETS = {
 
 
 def get_tokenizer():
-    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
     return tokenizer
 

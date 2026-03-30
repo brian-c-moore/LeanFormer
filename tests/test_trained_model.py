@@ -20,6 +20,7 @@ from leanformer.model.leanformer import LeanFormer
 from leanformer.beliefs.knowledge_store import KnowledgeStore
 from leanformer.data.wikitext import WikiTextLoader
 from transformers import AutoTokenizer
+from leanformer import DEFAULT_TOKENIZER
 
 
 CHECKPOINT_DIR = Path("checkpoints/validation")
@@ -38,7 +39,7 @@ def trained():
     ))
     model.eval()
 
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 

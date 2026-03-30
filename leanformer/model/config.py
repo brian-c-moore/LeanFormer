@@ -8,7 +8,7 @@ from pathlib import Path
 @dataclass
 class LeanFormerConfig:
     # Core architecture
-    vocab_size: int = 50257          # GPT-2 tokenizer default
+    vocab_size: int = 32000          # Mistral tokenizer default
     d_model: int = 512
     n_heads: int = 8
     n_layers: int = 12

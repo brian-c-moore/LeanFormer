@@ -12,6 +12,8 @@ from pathlib import Path
 from transformers import AutoTokenizer
 from datasets import load_from_disk
 
+from .. import DEFAULT_TOKENIZER
+
 from rich.console import Console
 from rich.table import Table
 from rich import box
@@ -40,7 +42,7 @@ def main():
     ))
     model.to(device).eval()
 
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
 
     param_count = sum(p.numel() for p in model.parameters())
@@ -82,7 +84,7 @@ def main():
 
     # --- Inference efficiency ---
     console.print("[bold]Inference Efficiency[/bold]")
-    sample = torch.randint(0, 50257, (1, config.max_seq_len)).to(device)
+    sample = torch.randint(0, config.vocab_size, (1, config.max_seq_len)).to(device)
     with torch.no_grad(), torch.amp.autocast("cuda", enabled=device == "cuda"):
         out = model(sample, training=False)
 

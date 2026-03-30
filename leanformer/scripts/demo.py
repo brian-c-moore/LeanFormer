@@ -47,7 +47,7 @@ def main():
 
     # --- 1. Build the model ---
     config = LeanFormerConfig(
-        vocab_size=50257,
+        vocab_size=32000,
         d_model=256,
         n_heads=4,
         n_layers=6,

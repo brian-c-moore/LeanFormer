@@ -30,7 +30,7 @@ from leanformer.model.low_rank import LowRankLinear
 @pytest.fixture(scope="module")
 def belief_config():
     return LeanFormerConfig(
-        vocab_size=50257,
+        vocab_size=32000,
         d_model=64,
         n_heads=4,
         n_layers=4,
