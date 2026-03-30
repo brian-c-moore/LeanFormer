@@ -1,12 +1,16 @@
 # LeanFormer Project Status
 
-**Last updated:** 2026-03-29
+**Last updated:** 2026-03-30
 
 ---
 
 ## Current State
 
-All architecture and infrastructure code is complete. The full pipeline (data preparation, training, forging, routing, composition, consolidation, serving) is implemented and tested. **119 tests pass.** The remaining work is one long-running GPU training job (~24-36 hours), followed by full-scale forging and integration validation.
+All architecture and infrastructure code is complete. The full pipeline (data preparation, training, forging, routing, composition, consolidation, serving) is implemented and tested. **119 tests pass.**
+
+The current training target is the **390M parameter model** (1.68B dense equivalent, 4.3x compression) using the Mistral tokenizer (32K vocab). Training runs on a GCP g2-standard-4 (L4 24GB, on-demand) for an estimated ~200 hours (~8 days), costing ~$142 within GCP's $300 free credit.
+
+**Note on training data:** The corpus is 249M tokens. For a 390M model over 3 epochs, that's ~747M token passes — lean relative to the ~8B tokens that Chinchilla scaling would suggest. This is intentional: the base model needs competent internal representations for the delta system, not encyclopedic factual knowledge. Perplexity may plateau above the <50 target, but the Knowledge Plane validation requires meaningful embeddings and layer structure, not a fully converged language model.
 
 ---
 
@@ -57,7 +61,7 @@ Scale validation trained on 500K OpenWebText samples.
 | Bit-for-bit restoration | Verified for all 100 beliefs (ordered and random removal) |
 | Base weight integrity | 406 tensors verified unchanged |
 
-### 66M Parameters (d_model=768, 12 layers) - Current
+### 66M Parameters (d_model=768, 12 layers)
 
 Knowledge Plane validated with quick-trained checkpoint (500 steps on WikiText-2).
 
@@ -73,6 +77,22 @@ Knowledge Plane validated with quick-trained checkpoint (500 steps on WikiText-2
 | Composition | Additive, order-independent, verified |
 | Base weight integrity | SHA-256 verified after full routing + composition lifecycle |
 | Inference latency overhead | < 2x with knowledge routing active |
+
+### 390M Parameters (d_model=2048, 24 layers) - Current Target
+
+Training on GCP L4 24GB. Mistral tokenizer (32K vocab).
+
+| Metric | Value |
+|--------|-------|
+| Compressed params | 390,214,657 |
+| Dense equivalent | 1,677,197,312 (4.3x compression) |
+| Tokenizer | Mistral (mistralai/Mistral-7B-v0.1, 32K vocab) |
+| Training data | 487,000 samples (~249M tokens), 3 epochs (~747M token passes) |
+| Training hardware | GCP g2-standard-4, NVIDIA L4 24GB, on-demand |
+| Estimated training time | ~200 hours (~8 days) |
+| Estimated cost | ~$142 |
+| Checkpoint frequency | Every 5,000 steps (~1.6 hours) |
+| Inference target | RTX 3060 12GB at FP16 (~0.8GB weights) |
 
 ---
 
@@ -118,24 +138,25 @@ Second batches are rejected because the 500-step model produces nearly identical
 
 ## Remaining Work
 
-### 1. Full Training (~24-36 hours GPU)
+### 1. Full Training (~200 hours on GCP L4)
 
 ```bash
+cp configs/reasoning_core_432m.yaml configs/reasoning_core.yaml
 python -m leanformer.scripts.train_reasoning
 ```
 
 The training script handles:
-- 3 epochs with cosine LR schedule and warmup
+- 3 epochs with cosine LR schedule (lr=2e-4) and 3000-step warmup
 - Mixed precision (fp16) with GradScaler
-- Gradient accumulation (effective batch 64)
+- Gradient accumulation (batch_size=2 x 32 = effective batch 64)
 - Validation every 1000 steps
-- Checkpointing every 5000 steps
+- Checkpointing every 5000 steps (~1.6 hours, ~146 checkpoints total)
 - Exit head tuning (1000 steps, frozen base, lr=1e-3)
 - Post-training validation (perplexity, generation samples, orthogonal capacity measurement)
 - Model hash computation and storage
 
 **Expected outcomes:**
-- Perplexity < 50 on held-out reasoning corpus
+- Validation perplexity decreasing steadily (may plateau above 50 due to limited training data relative to model capacity — see note in Current State)
 - FF sparsity climbing toward 0.8
 - Diverse per-layer representations enabling many orthogonal deltas
 
