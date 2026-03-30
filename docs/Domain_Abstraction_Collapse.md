@@ -2,8 +2,7 @@
 
 ## A Design Methodology for Universal Computational Substrates
 
-Brian Moore, M.S., CISSP, CCSP
-Independent Systems Researcher
+Brian Moore, M.S., CISSP, CCSP - Independent Systems Researcher
 
 ---
 
