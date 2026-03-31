@@ -89,12 +89,13 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     effective_batch = batch_size * grad_accum
-    steps_per_epoch = train_size // batch_size
-    total_steps = steps_per_epoch * epochs
+    micro_steps_per_epoch = train_size // batch_size
+    total_micro_steps = micro_steps_per_epoch * epochs
+    total_steps = total_micro_steps // grad_accum  # optimizer steps
 
     console.print(f"  Batch: {batch_size} x {grad_accum} accum = {effective_batch} effective")
     console.print(f"  LR: {lr}, warmup: {warmup_steps}")
-    console.print(f"  Epochs: {epochs} ({total_steps:,} total steps)")
+    console.print(f"  Epochs: {epochs} ({total_steps:,} optimizer steps, {total_micro_steps:,} micro-steps)")
     console.print()
 
     # DataLoaders
@@ -123,7 +124,8 @@ def main():
     scaler = torch.amp.GradScaler("cuda")
 
     # Training state
-    global_step = 0
+    global_step = 0       # micro-batch counter
+    optimizer_step = 0    # actual weight update counter
     best_val_loss = float("inf")
     training_log = []
 
@@ -163,74 +165,74 @@ def main():
                 scaler.update()
                 scheduler.step()
                 optimizer.zero_grad()
+                optimizer_step += 1
 
-            # Logging
-            if global_step % logging_steps == 0:
-                avg_loss = epoch_loss / epoch_steps
-                avg_lm = epoch_lm_loss / epoch_steps
-                avg_aux = epoch_aux_loss / epoch_steps
-                current_lr = scheduler.get_last_lr()[0]
-                elapsed = time.perf_counter() - epoch_start
-                tokens_per_sec = epoch_steps * batch_size * model_config.max_seq_len / elapsed
-                vram = torch.cuda.max_memory_allocated() / 1e9
+                # Logging (per optimizer step)
+                if optimizer_step % logging_steps == 0:
+                    avg_loss = epoch_loss / epoch_steps
+                    avg_lm = epoch_lm_loss / epoch_steps
+                    avg_aux = epoch_aux_loss / epoch_steps
+                    current_lr = scheduler.get_last_lr()[0]
+                    elapsed = time.perf_counter() - epoch_start
+                    tokens_per_sec = epoch_steps * batch_size * model_config.max_seq_len / elapsed
+                    vram = torch.cuda.max_memory_allocated() / 1e9
 
-                stats = out.get("layer_stats", [])
-                avg_ff_sparsity = sum(s.get("ff_sparsity", 0) for s in stats) / max(len(stats), 1)
-                exit_layer = out.get("exit_layer", model_config.n_layers)
+                    stats = out.get("layer_stats", [])
+                    avg_ff_sparsity = sum(s.get("ff_sparsity", 0) for s in stats) / max(len(stats), 1)
+                    exit_layer = out.get("exit_layer", model_config.n_layers)
 
-                log_entry = {
-                    "step": global_step,
-                    "epoch": epoch + 1,
-                    "loss": avg_loss,
-                    "lm_loss": avg_lm,
-                    "aux_loss": avg_aux,
-                    "lr": current_lr,
-                    "tokens_per_sec": tokens_per_sec,
-                    "vram_gb": vram,
-                    "ff_sparsity": avg_ff_sparsity,
-                    "exit_layer": exit_layer,
-                }
-                training_log.append(log_entry)
+                    log_entry = {
+                        "step": optimizer_step,
+                        "epoch": epoch + 1,
+                        "loss": avg_loss,
+                        "lm_loss": avg_lm,
+                        "aux_loss": avg_aux,
+                        "lr": current_lr,
+                        "tokens_per_sec": tokens_per_sec,
+                        "vram_gb": vram,
+                        "ff_sparsity": avg_ff_sparsity,
+                        "exit_layer": exit_layer,
+                    }
+                    training_log.append(log_entry)
 
-                console.print(
-                    f"  step {global_step:>6}/{total_steps} | "
-                    f"epoch {epoch+1} | "
-                    f"loss {avg_loss:.4f} (lm {avg_lm:.4f} + aux {avg_aux:.4f}) | "
-                    f"lr {current_lr:.2e} | "
-                    f"{tokens_per_sec:.0f} tok/s | "
-                    f"vram {vram:.1f}GB | "
-                    f"ff_sp {avg_ff_sparsity:.2f} | "
-                    f"exit {exit_layer}/{model_config.n_layers}"
-                )
+                    console.print(
+                        f"  step {optimizer_step:>6}/{total_steps} | "
+                        f"epoch {epoch+1} | "
+                        f"loss {avg_loss:.4f} (lm {avg_lm:.4f} + aux {avg_aux:.4f}) | "
+                        f"lr {current_lr:.2e} | "
+                        f"{tokens_per_sec:.0f} tok/s | "
+                        f"vram {vram:.1f}GB | "
+                        f"ff_sp {avg_ff_sparsity:.2f} | "
+                        f"exit {exit_layer}/{model_config.n_layers}"
+                    )
 
-                # Check for NaN
-                if not math.isfinite(avg_loss):
-                    console.print("[red]ERROR: NaN/Inf loss detected! Stopping.[/red]")
-                    # Save what we have
-                    with open(output_dir / "training_log.json", "w") as f:
-                        json.dump(training_log, f, indent=2)
-                    sys.exit(1)
+                    # Check for NaN
+                    if not math.isfinite(avg_loss):
+                        console.print("[red]ERROR: NaN/Inf loss detected! Stopping.[/red]")
+                        with open(output_dir / "training_log.json", "w") as f:
+                            json.dump(training_log, f, indent=2)
+                        sys.exit(1)
 
-            # Eval
-            if global_step % eval_steps == 0:
-                val_loss = evaluate(model, val_loader, model_config)
-                val_ppl = math.exp(min(val_loss, 20))  # Cap to avoid overflow
-                console.print(
-                    f"  [cyan]EVAL step {global_step}: val_loss={val_loss:.4f}, val_ppl={val_ppl:.1f}[/cyan]"
-                )
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    save_checkpoint(model, model_config, output_dir, global_step, val_loss)
-                    console.print(f"  [green]New best! Saved to {output_dir}[/green]")
-                model.train()
+                # Eval
+                if optimizer_step % eval_steps == 0:
+                    val_loss = evaluate(model, val_loader, model_config)
+                    val_ppl = math.exp(min(val_loss, 20))
+                    console.print(
+                        f"  [cyan]EVAL step {optimizer_step}: val_loss={val_loss:.4f}, val_ppl={val_ppl:.1f}[/cyan]"
+                    )
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        save_checkpoint(model, model_config, output_dir, optimizer_step, val_loss)
+                        console.print(f"  [green]New best! Saved to {output_dir}[/green]")
+                    model.train()
 
-            # Save checkpoint
-            if global_step % save_steps == 0:
-                save_checkpoint(
-                    model, model_config,
-                    output_dir / f"step-{global_step}",
-                    global_step, epoch_loss / epoch_steps,
-                )
+                # Save checkpoint
+                if optimizer_step % save_steps == 0:
+                    save_checkpoint(
+                        model, model_config,
+                        output_dir / f"step-{optimizer_step}",
+                        optimizer_step, epoch_loss / epoch_steps,
+                    )
 
         # End of epoch
         epoch_elapsed = time.perf_counter() - epoch_start
@@ -248,7 +250,7 @@ def main():
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            save_checkpoint(model, model_config, output_dir, global_step, val_loss)
+            save_checkpoint(model, model_config, output_dir, optimizer_step, val_loss)
             console.print(f"  [green]New best! Saved to {output_dir}[/green]")
         console.print()
 
