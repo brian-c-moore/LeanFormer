@@ -281,7 +281,7 @@ def main():
 
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
     tokenizer = get_tokenizer()
-    print(f"Tokenizer: GPT-2 (vocab size: {tokenizer.vocab_size})")
+    print(f"Tokenizer: {DEFAULT_TOKENIZER} (vocab size: {tokenizer.vocab_size})")
 
     source_paths = []
     loaders = [
