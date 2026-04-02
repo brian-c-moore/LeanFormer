@@ -1,8 +1,8 @@
 # LeanFormer Architecture
 
-LeanFormer treats catastrophic forgetting as a shared mutable state problem. The base model weights are immutable after training. Knowledge is stored as sparse, independently-addressable belief deltas. A registry governs subspace allocation to prevent interference. The result is a model that can learn new knowledge without retraining, forget on demand, and compose knowledge from multiple domains additively.
+LeanFormer treats catastrophic forgetting as a shared mutable state problem. The base model weights are immutable after training. Knowledge is stored as sparse, independently-addressable belief deltas. A registry governs subspace allocation to prevent interference. The result is a model that can learn new knowledge without retraining, forget on demand, and compose knowledge from multiple domains additively. The training pipeline itself is governed by per-group convergence detection, coarse-to-fine hierarchy activation, federated budget allocation, and gradient routing.
 
-See `LeanFormer_Proposal.md` for the theoretical foundation.
+See `LeanFormer_Proposal.md` for the research proposal.
 
 ---
 
@@ -275,20 +275,75 @@ Validates that reasoning and retrieval are structurally separated. Benchmark wit
 
 ---
 
-## Relationship to DAC
+## Governed Training Pipeline
 
-LeanFormer was designed using Domain Abstraction Collapse (DAC), a methodology for identifying structural isomorphisms across domain boundaries and reducing domain-specific abstractions to a minimal set of domain-agnostic primitives (see `Domain_Abstraction_Collapse.md`).
+Applies per-group convergence detection, coarse-to-fine hierarchy activation, federated budget allocation, and gradient routing to reduce training compute.
 
-| LeanFormer Component | DAC Primitive Composition |
-|---------------------|---------------------------|
-| Two-pass sparse attention | CompetitiveSelection (screening) + ActuationPass (exact computation on winners) |
-| Gated feed-forward | CompetitiveSelection (gate predicts active neurons) + ActuationPass (compute only winners) |
-| Adaptive depth | ConvergenceGovernor (residual change detection) + Budget (depth ceiling) |
-| Delta routing | CompetitiveSelection (cosine similarity over embeddings) + AllocationCut (selected subset) |
-| Delta registry | ResourceRegistry (subspace-to-delta mapping) + Budget (capacity per layer) |
-| Belief encoding | PropagationPass (gradient-based delta optimization) |
-| Consolidation | Reduction (SVD truncation of summed contributions) |
-| Provenance logging | AuditSink (append-only record of routing decisions) |
+### Parameter Group Registry
+
+**File:** `configs/parameter_groups.json`, `leanformer/training/param_groups.py`
+
+Every parameter tensor is assigned to a named group with a hierarchy level (L0-L3). Groups map functional roles: embeddings, attention routing, gates, layer norms (L0 — structural), attention V/O, FF projections (L1 — representational), output head (L2 — refinement), exit classifier (L3 — specialization). The registry is config-independent — tensor name patterns match any model size.
+
+### Per-Group Convergence Governors
+
+**File:** `leanformer/training/convergence.py`
+
+Each parameter group has its own convergence governor with a four-state machine:
+
+```
+ACTIVE → COOLING → CONVERGED → AWAKENED → ACTIVE
+```
+
+Tracks gradient EMA and loss contribution. Converged groups have `requires_grad` set to `False` (zero gradient compute). Groups reactivate if loss contribution spikes. Budget multipliers per state: ACTIVE 1.0x, COOLING 0.5x, CONVERGED 0.05x (maintenance), AWAKENED 1.2x (recovery).
+
+### Coarse-to-Fine Hierarchy Activation
+
+**File:** `leanformer/training/hierarchy.py`
+
+Only L0 parameters active at step 0. Level N+1 activates when all groups in level N reach COOLING or CONVERGED. Per-level LR multipliers at activation (1.5x for L1/L2, 2.0x for L3, decaying to 1.0x). Emergency activation at 80% of total steps if convergence signals haven't fired.
+
+### Federated Budget Allocation
+
+**File:** `leanformer/training/budget.py`
+
+Distributes gradient compute across groups proportional to learning need (gradient magnitude + loss contribution + convergence progress). The invariant `sum(allocations) <= master_budget` holds at every step. Converged groups release budget to active groups. Floor (2%) and ceiling (40%) prevent starvation/monopolization.
+
+### Gradient Router
+
+**File:** `leanformer/training/router.py`
+
+Small MLP scores each sample against each parameter group. Top-k selection with straight-through estimator for gradient flow. Entropy regularization prevents routing collapse. Post-backward gradient masking zeros non-selected groups. Observation-only warmup for first 5% of steps.
+
+### Governed Data Pipeline
+
+**File:** `leanformer/training/data_pipeline.py`
+
+Difficulty-tiered sampling (Mastered/Learning/Struggling/Failing), LSH deduplication, quality gating, periodic re-scoring. Tier fractions adjust dynamically as training progresses.
+
+### Change-Triggered Evaluation
+
+**File:** `leanformer/training/eval_pipeline.py`
+
+Evaluates metrics only when the parameter groups they depend on change. Budget-governed eval frequency. Per-metric regression detection with alert system.
+
+### Forge Readiness Gating
+
+**File:** `leanformer/training/forge_gate.py`
+
+Knowledge forge activates per-domain only when target parameter groups have been CONVERGED for a stability window. Suspends on group reactivation. Automated delta quality validation with accept/reject. Forge-training feedback loop boosts budget for groups with low delta acceptance.
+
+### Unified Audit System
+
+**File:** `leanformer/training/audit.py`
+
+SHA-256 hash-chained append-only log covering all pipeline stages. Every training step, convergence event, and checkpoint is recorded with tamper-evident provenance. Query API by step range, parameter group, and event type. Checkpoint-audit binding for verifiable restoration.
+
+### Deployment Profiling
+
+**File:** `leanformer/training/deployment.py`
+
+Profiles model at quality-tiered deployment configurations (Full, Standard, Efficient, Minimal) with latency measurements. Generates deployment manifest with per-tier quality scores, parameter counts, and active group lists.
 
 ---
 
@@ -303,6 +358,20 @@ leanformer/
     feedforward.py                  GatedFeedForward
     depth_controller.py             DepthController (early exit)
     leanformer.py                   LeanFormer (top-level model)
+
+  training/                       Governed training pipeline
+    param_groups.py                 Parameter group registry + taxonomy
+    convergence.py                  Per-group convergence governors (4-state machine)
+    hierarchy.py                    Coarse-to-fine hierarchy activation
+    budget.py                       Federated budget allocation
+    router.py                       Gradient router (sample -> group routing)
+    data_pipeline.py                Difficulty-tiered sampling, LSH dedup
+    eval_pipeline.py                Change-triggered evaluation
+    forge_gate.py                   Forge readiness gating
+    audit.py                        SHA-256 hash-chained audit system
+    deployment.py                   Deployment profiling + manifest generation
+    trainer.py                      HuggingFace Trainer integration
+    callbacks.py                    Training callbacks
 
   beliefs/                        Delta belief system
     belief_encoder.py               Gradient-based fact encoding
@@ -334,13 +403,14 @@ leanformer/
     prepare_reasoning_data.py       Download + tokenize training corpus
     train_reasoning.py              Full training with checkpoint resume
     quick_train_validate.py         Quick pipeline validation
+    compare_phase5.py               Baseline vs governed training comparison
     forge_all_domains.py            Forge all domain fact banks
     demo.py                         Demo with rich output
 
   data/domains/                   Domain fact banks (JSON)
 
-configs/                          Model configurations (YAML)
-tests/                            199 tests across all components
+configs/                          Model + parameter group configurations
+tests/                            307 tests across all components
 ```
 
 ---
@@ -356,3 +426,9 @@ tests/                            199 tests across all components
 - DQS invariant validation runs at delta load time; non-compliant compressed deltas are rejected.
 - KV cache quantization uses MSE-only (no QJL) per community validation that softmax amplifies QJL variance.
 - Checkpoint save/restore includes optimizer, scheduler, scaler, and RNG states with atomic writes.
+- Parameter group registry (`configs/parameter_groups.json`) is config-independent — fnmatch patterns match any model size.
+- Convergence governor four-state machine: ACTIVE (full budget) → COOLING (50%) → CONVERGED (5% maintenance, requires_grad=False) → AWAKENED (120% recovery).
+- Hierarchy: L0 always active from step 0. L1-L3 activate on convergence signals. Emergency activation at 80% of training.
+- Budget invariant `sum(allocations) <= master_budget` enforced at every reallocation with floor/ceiling per group.
+- Gradient router uses straight-through estimator for end-to-end differentiability through discrete top-k selection.
+- Audit chain: SHA-256 hash of each record includes previous record's hash. Verified on checkpoint restore.

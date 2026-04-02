@@ -8,7 +8,7 @@ Domain Abstraction Collapse (DAC) claims that hard problems in one domain are of
 
 ## 1. Motivation: Testing DAC on AI Model Design
 
-DAC identifies sixteen irreducible abstraction primitives sufficient to express computational patterns across twelve engineering domains (see `Domain_Abstraction_Collapse.md`). The methodology claims not only analytical power (explaining existing systems) but generative power (designing new ones by recognizing structural isomorphisms with solved problems).
+DAC identifies sixteen irreducible abstraction primitives sufficient to express computational patterns across twelve engineering domains. The methodology claims not only analytical power (explaining existing systems) but generative power (designing new ones by recognizing structural isomorphisms with solved problems).
 
 To test the generative claim, we apply DAC to the design of a transformer-based language model, a domain where both efficiency and adaptability are active research problems. Two questions:
 
