@@ -15,13 +15,19 @@ Knowledge Plane
     |-- Delta Registry (orthogonality enforcement, capacity accounting)
     |-- Compositional Router (cosine similarity, multi-domain activation)
     |-- Consolidation Pipeline (SVD re-factorization, delta merging)
+    |-- Provenance System (confidence scoring, uncertainty flagging)
+    |-- Delta Quantizer (typed compression, DQS invariant enforcement)
+    |-- Few-Shot Forge (sample efficiency measurement)
     |
     |  Delta Format Specification v2.0 (.delta files)
     |
 Knowledge Forge (targeted-layer encoding, validation, progressive widening)
     |
 Reasoning Core (LeanFormer, frozen after training)
-    66M compressed params, d_model=768, 12 layers
+    |-- TurboQuant KV Cache (4-bit compression at long contexts)
+    |
+Evaluation
+    |-- Reasoning-Retrieval Separation Benchmark
 ```
 
 ---
@@ -34,7 +40,7 @@ Four structural innovations reduce compute and storage at every layer.
 
 **File:** `leanformer/model/low_rank.py`
 
-Every weight matrix W (d_in x d_out) is stored as two factors A (d_in x rank) and B (rank x d_out). The forward pass computes `x @ A @ B` instead of `x @ W`. B is initialized to zero (LoRA insight) so the model starts as identity.
+Every weight matrix W (d_in x d_out) is stored as two factors A (d_in x rank) and B (rank x d_out). The forward pass computes `x @ A @ B` instead of `x @ W`. B matrices in attention and feed-forward projections are initialized with small random values (`std=0.01`) to ensure gradient flow from the first training step. Only `lm_head.B` and `activation_gate.B` retain zero initialization — they have non-multiplicative gradient paths that bootstrap within one step.
 
 At rank=96 with d_model=768, each attention projection stores 147K params instead of 590K. Per-module compression averages 5-8x.
 
@@ -42,8 +48,8 @@ At rank=96 with d_model=768, each attention projection stores 147K params instea
 
 **File:** `leanformer/model/attention.py`
 
-1. **Screening pass**: cheap low-rank projections (rank=24) compute approximate attention scores and select top-K candidate keys per query.
-2. **Exact pass**: full-rank Q, K, V projections compute exact attention only over the selected candidates.
+1. **Screening pass**: cheap low-rank projections compute approximate attention scores and select top-K candidate keys per query.
+2. **Exact pass**: full Q, K, V projections compute exact attention only over the selected candidates.
 
 At top_k=96 with seq_len=512, only 19% of key-value pairs are computed.
 
@@ -51,13 +57,15 @@ At top_k=96 with seq_len=512, only 19% of key-value pairs are computed.
 
 **File:** `leanformer/model/feedforward.py`
 
-A small gate predictor (rank=24) predicts which neurons will be active before computing the expensive up/down projections. A topk scatter mask enforces the sparsity target (default 80%) at inference time. During training, the gate learns via auxiliary loss against the actual activation magnitudes.
+A small gate predictor predicts which neurons will be active before computing the expensive projections. A top-k scatter mask enforces the sparsity target (default 80%) at inference time. During training, the gate learns via auxiliary loss against actual activation magnitudes.
+
+The main SwiGLU computation: `hidden = up_proj(x) * SiLU(gate_proj(x))`.
 
 ### Adaptive Computation Depth
 
 **File:** `leanformer/model/depth_controller.py`
 
-Each layer's exit classifier predicts whether the hidden state has converged. Exit requires both small residual change and high classifier confidence. Never exits during training (exit heads train via auxiliary loss only). Minimum depth is configurable (default 4).
+Each layer's exit classifier predicts whether the hidden state has converged. Exit requires both small residual change and high classifier confidence. Never exits during training (exit heads train via auxiliary loss only). Minimum depth is configurable.
 
 ### Model Assembly
 
@@ -67,13 +75,13 @@ Each layer's exit classifier predicts whether the hidden state has converged. Ex
 LeanFormer
   token_embedding (Embedding)
   position_embedding (Embedding)
-  layers[0..11] (LeanFormerLayer)
+  layers[0..N] (LeanFormerLayer)
     attn (TwoPassSparseAttention)
       q_proj, k_proj, v_proj, out_proj (LowRankLinear)
       q_screen, k_screen (LowRankLinear)
     ff (GatedFeedForward)
       up_proj, gate_proj, down_proj (LowRankLinear)
-      gate_predictor (Linear)
+      activation_gate (LowRankLinear)
     norm1, norm2 (LayerNorm)
   depth_controller (DepthController)
     exit_head (Linear -> SiLU -> Linear)
@@ -93,7 +101,7 @@ Adds, updates, and removes knowledge from a frozen model via low-rank weight ove
 
 **File:** `leanformer/beliefs/belief_encoder.py`
 
-Encodes facts into low-rank weight deltas via gradient-based learning. Freezes base weights, creates trainable (dA, dB) factors, optimizes to make the target token more probable. Both dA and dB are initialized with small random values (not B-zero) because deltas need gradient flow from the start.
+Encodes facts into low-rank weight deltas via gradient-based learning. Freezes base weights, creates trainable (dA, dB) factors, optimizes to make the target token more probable. Both dA and dB are initialized with small random values because deltas need gradient flow from the start.
 
 ### Delta System
 
@@ -146,8 +154,6 @@ The contract between all Knowledge Plane components. Every delta conforms to thi
 
 Serialized as ZIP archives (`.delta` files) containing `manifest.json` and `.pt` tensor files.
 
-`compute_model_hash(model)` produces a SHA-256 of all parameters, locking base model identity.
-
 ### Delta Registry + Orthogonality Engine
 
 **File:** `leanformer/knowledge_plane/registry.py`
@@ -158,7 +164,7 @@ Single source of truth for subspace allocation.
 
 **Registration:** validates base model hash, model dimensions, uniqueness, and orthogonality threshold (default 0.3). Rejected deltas never enter the registry.
 
-**Capacity accounting:** per-layer remaining slots = `(d_model - occupied_rank) / delta_rank`. Theoretical maximum at d_model=768, rank=16: 48 orthogonal deltas per layer.
+**Capacity accounting:** per-layer remaining slots = `(d_model - occupied_rank) / delta_rank`.
 
 ### Knowledge Forge
 
@@ -171,11 +177,7 @@ Pipeline:
 2. Gradient-based encoding: freeze base, optimize (A, B) per target layer
 3. Validation: measure target token rank improvement before vs. after
 4. Registry consultation: check orthogonality against existing deltas
-5. Progressive layer widening if validation fails:
-   - [4,5,6,7,8] (5 layers, default)
-   - [3,4,5,6,7,8,9] (7 layers)
-   - [2,3,4,5,6,7,8,9,10] (9 layers)
-   - [0..11] (all 12, last resort)
+5. Progressive layer widening if validation fails (dynamically computed based on model depth)
 
 Targeted layers reduce per-delta cost by 58% vs the all-layer approach.
 
@@ -195,8 +197,48 @@ Inference with Knowledge Plane integration:
 1. Embed query using model's own embeddings
 2. Route to relevant deltas
 3. Compose active deltas additively
-4. Apply via PyTorch forward hooks (no model code modification)
+4. Apply via PyTorch forward hooks
 5. Generate response with full provenance
+
+### Output Provenance + Confidence Scoring
+
+**File:** `leanformer/knowledge_plane/provenance.py`
+
+Surfaces a graded, architecturally-grounded confidence score alongside each inference result. Three components:
+
+- **Routing strength**: max cosine similarity between query and activating delta (0-1)
+- **Composition coherence**: pairwise orthogonality of active deltas + routing score consistency (0-1)
+- **Delta coverage**: whether knowledge deltas exist for the query domain (0-1)
+
+Combined via weighted sum into a normalized confidence score. Score below threshold triggers explicit uncertainty flagging. This is not softmax probability — it measures epistemic grounding from the knowledge retrieval mechanism itself.
+
+Integrated into `KnowledgeRuntime.infer()`: every inference call returns a `ProvenanceSignal`.
+
+### Delta-Aware Quantization
+
+**File:** `leanformer/knowledge_plane/quantization.py`
+
+The DQS (Delta Quantization Specification) framework defines per-delta invariant tolerances and selects compression accordingly. Three tiers:
+
+| Tier | Purpose | Bits | Cosine Floor | Frobenius Ceiling |
+|------|---------|------|-------------|-------------------|
+| 1 | Routing-critical | 4 | 0.95 | 0.05 |
+| 2 | Composition | 4 | 0.85 | 0.10 |
+| 3 | Archive | 3 | 0.70 | 0.20 |
+
+Quantization pipeline: random orthogonal rotation (decorrelates channels) -> per-channel affine scalar quantization -> inverse rotation at dequantization. Embedding and subspace basis preserved at full precision. Non-compliant compressed deltas are rejected at load time.
+
+### Few-Shot Delta Production
+
+**File:** `leanformer/knowledge_plane/few_shot.py`
+
+Measures minimum example count for well-formed delta production. `FewShotForge.sweep()` runs controlled experiments at varying example counts. Quality metrics: forge success rate, routing accuracy, orthogonality score, DQS compliance.
+
+### KV Cache Compression
+
+**File:** `leanformer/inference/kv_cache.py`
+
+4-bit KV cache compression for inference-time memory reduction. Random orthogonal rotation decorrelates channels before per-channel scalar quantization. 128-token residual window at full FP16. Activated only when context exceeds a configurable threshold.
 
 ### Consolidation Pipeline
 
@@ -225,11 +267,17 @@ FastAPI server:
 | `/consolidate` | POST | Trigger consolidation |
 | `/provenance` | GET | Audit trail |
 
+### Reasoning-Retrieval Separation Benchmark
+
+**File:** `leanformer/evaluation/separation.py`
+
+Validates that reasoning and retrieval are structurally separated. Benchmark with three query categories: (a) retrieval-only, (b) reasoning-only, (c) both. Measures confidence score, uncertainty flagging, provenance attribution accuracy per category.
+
 ---
 
 ## Relationship to DAC
 
-LeanFormer was designed using Domain Abstraction Collapse (DAC), a methodology for identifying structural isomorphisms across domain boundaries and reducing domain-specific abstractions to a minimal set of domain-agnostic primitives (see `Domain_Abstraction_Collapse.md`). DAC revealed that catastrophic forgetting is structurally identical to the write-conflict problem in shared mutable state, and that the four efficiency innovations each correspond to a missing DAC primitive in the standard transformer.
+LeanFormer was designed using Domain Abstraction Collapse (DAC), a methodology for identifying structural isomorphisms across domain boundaries and reducing domain-specific abstractions to a minimal set of domain-agnostic primitives (see `Domain_Abstraction_Collapse.md`).
 
 | LeanFormer Component | DAC Primitive Composition |
 |---------------------|---------------------------|
@@ -263,46 +311,48 @@ leanformer/
     hierarchical_embedding.py       2-level k-means embedding hierarchy
 
   knowledge_plane/                Knowledge Plane
-    dfs.py                          DeltaFormatSpec v2.0 (contract)
+    dfs.py                          DeltaFormatSpec v2.0
     registry.py                     DeltaRegistry + orthogonality engine
     forge.py                        KnowledgeForge (targeted-layer encoding)
     router.py                       KnowledgePlaneRouter (cosine routing)
-    runtime.py                      KnowledgeRuntime (hook-based inference)
+    runtime.py                      KnowledgeRuntime (inference + provenance)
     consolidation.py                SVD re-factorization consolidation
     server.py                       FastAPI inference server
+    provenance.py                   Confidence scoring + uncertainty flagging
+    quantization.py                 DQS framework + delta quantization
+    few_shot.py                     Few-shot delta production measurement
+
+  inference/
+    engine.py                       LeanFormerInference (model loading + generation)
+    kv_cache.py                     TurboQuant 4-bit KV cache compression
+
+  evaluation/
+    efficiency.py                   Active params, FLOPs, compression metrics
+    separation.py                   Reasoning-retrieval separation benchmark
 
   scripts/
-    prepare_reasoning_data.py       Download + tokenize 5-source corpus
-    train_reasoning.py              Full training (3 epochs + exit head tuning)
-    quick_train_validate.py         Quick pipeline validation (500 steps)
-    forge_all_domains.py            Forge all 3 domain fact banks
-    forge_domain.py                 Single-domain forge CLI
+    prepare_reasoning_data.py       Download + tokenize training corpus
+    train_reasoning.py              Full training with checkpoint resume
+    quick_train_validate.py         Quick pipeline validation
+    forge_all_domains.py            Forge all domain fact banks
     demo.py                         Demo with rich output
 
-  data/
-    domains/                        Domain fact banks (JSON)
-      chemistry.json                  194 facts
-      cs.json                         165 facts
-      general.json                    173 facts
+  data/domains/                   Domain fact banks (JSON)
 
-configs/
-  reasoning_core.yaml               d_model=768 training config
-  scale.yaml                        d_model=512 training config
-  tiny.yaml                         d_model=128 PoC config
-
-tests/                              119 tests across all components
-deltas/                             Generated .delta files (gitignored)
-data/                               Downloaded datasets (gitignored)
-checkpoints/                        Model checkpoints (gitignored)
+configs/                          Model configurations (YAML)
+tests/                            199 tests across all components
 ```
 
 ---
 
 ## Implementation Notes
 
-- `LowRankLinear` initializes B to zero so the model starts as identity. `BeliefEncoder` initializes both dA and dB with small random values because deltas need gradient flow from the start.
-- `forward()` takes `training: bool` (controls gate/exit behavior) and optional `active_deltas: list[BeliefDelta]`. When `active_deltas=None`, the forward pass is identical to the base transformer.
-- Delta key format: `"layer_{i}_{target}"` where target is q_proj/k_proj/v_proj/out_proj/up_proj/gate_proj/down_proj.
+- `LowRankLinear` initializes B to zero. `GatedFeedForward` and `TwoPassSparseAttention` re-initialize their B matrices with `std=0.01` to ensure gradient flow through multiplicative and attention pathways. `BeliefEncoder` initializes both dA and dB with small random values.
+- `forward()` takes `training: bool` and optional `active_deltas: list[BeliefDelta]`. When `active_deltas=None`, the forward pass is identical to the base transformer.
 - Auxiliary losses (gate + exit) weighted at 0.01.
 - Orthogonality computation uses float64 for numerical stability.
 - Config: YAML via `from_yaml()`, JSON via `load()`/`save()`.
+- `KnowledgeRuntime.infer()` returns a `ProvenanceSignal` with every inference result.
+- DQS invariant validation runs at delta load time; non-compliant compressed deltas are rejected.
+- KV cache quantization uses MSE-only (no QJL) per community validation that softmax amplifies QJL variance.
+- Checkpoint save/restore includes optimizer, scheduler, scaler, and RNG states with atomic writes.

@@ -273,8 +273,14 @@ class LeanFormer(nn.Module):
         temperature: float = 0.8,
         top_k: int = 50,
         top_p: float = 0.9,
+        eos_token_id: int = 2,
     ) -> tuple[torch.Tensor, list[dict]]:
-        """Autoregressive generation. Returns (token_ids, per_step_stats)."""
+        """Autoregressive generation. Returns (token_ids, per_step_stats).
+
+        Args:
+            eos_token_id: Token ID that terminates generation. Default 2
+                (Mistral </s>). Set to -1 to disable early stopping.
+        """
         self.eval()
         generated = input_ids.clone()
         step_stats = []
@@ -315,7 +321,7 @@ class LeanFormer(nn.Module):
                 next_token = torch.multinomial(probs, num_samples=1)
                 generated = torch.cat([generated, next_token], dim=1)
 
-                if next_token.item() == 50256:  # GPT-2 EOS
+                if eos_token_id >= 0 and next_token.item() == eos_token_id:
                     break
 
         return generated, step_stats

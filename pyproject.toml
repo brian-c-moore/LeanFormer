@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "leanformer"
-version = "0.1.0"
-description = "LeanFormer: A lean transformer architecture with low-rank weights, sparse attention, gated activation, and adaptive depth"
+version = "0.2.0"
+description = "LeanFormer: A lean transformer architecture with low-rank weights, sparse attention, gated activation, adaptive depth, and knowledge plane with provenance"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}

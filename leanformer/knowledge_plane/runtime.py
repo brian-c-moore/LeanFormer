@@ -1,6 +1,9 @@
 """
 Knowledge Runtime: the serving component that manages active deltas,
 routes queries, and applies composed deltas at inference time.
+
+Includes output provenance tracking with graded confidence scoring
+and architecturally-grounded uncertainty flagging.
 """
 
 import time
@@ -10,6 +13,7 @@ from dataclasses import dataclass, field
 
 from .router import KnowledgePlaneRouter
 from .registry import DeltaRegistry
+from .provenance import ConfidenceScorer, ProvenanceSignal, ProvenanceLog
 
 
 @dataclass
@@ -22,6 +26,9 @@ class InferenceResult:
     composition_layers: List[int]           # Which layers had deltas applied
     inference_time_ms: float
     base_only: bool                         # Whether any deltas were active
+
+    # Provenance and confidence
+    provenance: Optional[ProvenanceSignal] = None
 
 
 class KnowledgeRuntime:
@@ -44,12 +51,19 @@ class KnowledgeRuntime:
         registry: DeltaRegistry,
         top_k: int = 5,
         device: str = "cuda",
+        uncertainty_threshold: float = 0.3,
     ):
         self.model = model
         self.tokenizer = tokenizer
         self.router = KnowledgePlaneRouter(registry, top_k=top_k)
         self.registry = registry
         self.device = device
+
+        # Provenance system
+        self.confidence_scorer = ConfidenceScorer(
+            uncertainty_threshold=uncertainty_threshold,
+        )
+        self.provenance_log = ProvenanceLog()
 
         # Freeze model
         for param in self.model.parameters():
@@ -94,6 +108,7 @@ class KnowledgeRuntime:
         comp_layers = []
         logits = None
 
+        query_emb = None
         try:
             if use_knowledge:
                 query_emb = self.embed_query(prompt)
@@ -147,6 +162,17 @@ class KnowledgeRuntime:
 
         elapsed = (time.time() - start) * 1000
 
+        # Compute provenance signal
+        if use_knowledge:
+            provenance = self.confidence_scorer.score(
+                routing_decisions=active_deltas,
+                registry=self.registry,
+                query_embedding=query_emb,
+            )
+        else:
+            provenance = self.confidence_scorer.score_base_only()
+        self.provenance_log.add(provenance)
+
         return InferenceResult(
             logits=logits.cpu() if logits is not None else torch.tensor([]),
             generated_text=generated_text,
@@ -155,6 +181,7 @@ class KnowledgeRuntime:
             composition_layers=comp_layers,
             inference_time_ms=elapsed,
             base_only=not use_knowledge or len(active_deltas) == 0,
+            provenance=provenance,
         )
 
     def verify_base_weight_integrity(self, expected_hash: str) -> bool:

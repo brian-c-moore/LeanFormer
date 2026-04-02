@@ -1,12 +1,12 @@
 """
-Phase 4: Full delta belief system validation at scale.
+Full delta belief system validation at scale.
 
 Tests 100 beliefs across 5 categories:
-- 4.2: Inject all 100 beliefs, measure rank improvement
-- 4.3: Test coexistence (all 100 active simultaneously)
-- 4.4: Test semantic routing discrimination
-- 4.5: Test removal (ordered + random)
-- 4.6: Test belief update
+- Inject all 100 beliefs, measure rank improvement
+- Test coexistence (all 100 active simultaneously)
+- Test semantic routing discrimination
+- Test removal (ordered + random)
+- Test belief update
 
 Usage:
     python -m leanformer.scripts.validate_beliefs
@@ -61,7 +61,7 @@ def main():
     with open(FACTS_PATH) as f:
         facts = json.load(f)
 
-    console.print("[bold cyan]Phase 4: Belief Delta System Validation at Scale[/bold cyan]\n")
+    console.print("[bold cyan]Belief Delta System Validation at Scale[/bold cyan]\n")
 
     # Snapshot base weights
     base_snapshot = {n: p.clone() for n, p in model.named_parameters()}

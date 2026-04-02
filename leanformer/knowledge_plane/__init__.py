@@ -7,3 +7,8 @@ from .runtime import KnowledgeRuntime
 from .forge import KnowledgeForge
 from .consolidation import KnowledgePlaneConsolidator
 from .server import create_app
+
+# Extensions
+from .provenance import ConfidenceScorer, ProvenanceSignal, ProvenanceLog
+from .quantization import DeltaQuantizer, DeltaQuantizationSpec, QuantizedDelta
+from .few_shot import FewShotForge, FewShotSweepResult

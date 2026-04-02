@@ -36,13 +36,54 @@ class Fact:
     domain_tags: List[str]
 
 
-# Layer targeting strategies, from most targeted to most broad
-LAYER_STRATEGIES = [
-    [4, 5, 6, 7, 8],        # Default: middle layers only
-    [3, 4, 5, 6, 7, 8, 9],  # Wider: include boundary layers
-    [2, 3, 4, 5, 6, 7, 8, 9, 10],  # Broad: most layers
-    list(range(12)),          # All layers: last resort
-]
+def build_layer_strategies(n_layers: int) -> list:
+    """Build progressive layer targeting strategies based on model depth.
+
+    Starts with a narrow band around the middle layers (where semantic
+    representations are richest), progressively widens, and falls back
+    to all layers as a last resort.
+    """
+    mid = n_layers // 2
+    strategies = []
+
+    # Strategy 1: narrow middle band (5 layers centered)
+    half = 2
+    start = max(0, mid - half)
+    end = min(n_layers, mid + half + 1)
+    strategies.append(list(range(start, end)))
+
+    # Strategy 2: wider middle band (7 layers)
+    half = 3
+    start = max(0, mid - half)
+    end = min(n_layers, mid + half + 1)
+    strategies.append(list(range(start, end)))
+
+    # Strategy 3: broad middle band (~60% of layers)
+    half = n_layers // 3
+    start = max(0, mid - half)
+    end = min(n_layers, mid + half + 1)
+    strategies.append(list(range(start, end)))
+
+    # Strategy 4: all layers (last resort)
+    strategies.append(list(range(n_layers)))
+
+    # Deduplicate while preserving the invariant that the last strategy
+    # is always "all layers". Remove earlier duplicates, not later ones.
+    all_layers = list(range(n_layers))
+    seen = []
+    for s in strategies:
+        if s not in seen:
+            seen.append(s)
+    # Ensure the all-layers fallback is always last
+    if seen[-1] != all_layers:
+        if all_layers in seen:
+            seen.remove(all_layers)
+        seen.append(all_layers)
+    return seen
+
+
+# Default strategies for backward compatibility (12-layer models)
+LAYER_STRATEGIES = build_layer_strategies(12)
 
 
 class KnowledgeForge:
@@ -313,7 +354,8 @@ class KnowledgeForge:
         Try to forge a batch of facts, progressively widening layer targeting
         if validation fails.
         """
-        for attempt, target_layers in enumerate(LAYER_STRATEGIES):
+        strategies = build_layer_strategies(self.registry.n_layers)
+        for attempt, target_layers in enumerate(strategies):
             print(f"  Attempt {attempt + 1}: layers {target_layers}")
 
             # Check registry capacity for these layers

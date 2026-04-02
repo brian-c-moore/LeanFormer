@@ -457,7 +457,7 @@ The composition of primitives:
 | Routing network | CompetitiveSelection (ranked): query embedding selects relevant deltas |
 | Belief injection | Transaction: atomic addition of delta to registry |
 | Belief removal | Transaction: atomic removal restoring pre-injection state |
-| Knowledge Plane (Phase 3) | FederatedBudget\<ParameterSubspace\>: master parameter space subdivided into orthogonal delta regions |
+| Knowledge Plane | FederatedBudget\<ParameterSubspace\>: master parameter space subdivided into orthogonal delta regions |
 
 The point is not that this is a complicated mapping. The point is that once the mapping was visible, the architecture followed directly and was implemented in 24 hours. The "hard problem" (catastrophic forgetting) became a composition of solved primitives (budget-governed transactions over a resource registry) the moment the ML vocabulary was stripped away.
 
@@ -595,7 +595,7 @@ If DAC's thesis is correct, the software industry is spending enormous resources
 
 The identification that attention is soft competitive selection and backpropagation is a variant of graph message-passing creates a bridge between the ML optimization community and the real-time systems community. Techniques developed for efficient GPU selection (the visibility buffer, hierarchical culling, budget-constrained traversal) become candidates for efficient attention computation. Techniques developed for efficient fixed-point iteration (convergence governors, temporal amortization, adaptive iteration counts) become candidates for training loop optimization.
 
-The LeanFormer belief-delta system demonstrates a more immediate practical implication: the entire problem of knowledge management in neural networks (injection, removal, versioning, composition, audit) maps directly to solved database and systems engineering patterns. Knowledge Plane architecture (Phase 3 of the LeanFormer design) treats knowledge as a managed database with insert, update, delete, query, and vacuum operations. The structural identity with database management means that decades of engineering on consistency, isolation, and durability transfer directly.
+The LeanFormer belief-delta system demonstrates a more immediate practical implication: the entire problem of knowledge management in neural networks (injection, removal, versioning, composition, audit) maps directly to solved database and systems engineering patterns. The Knowledge Plane architecture treats knowledge as a managed database with insert, update, delete, query, and vacuum operations. The structural identity with database management means that decades of engineering on consistency, isolation, and durability transfer directly.
 
 ### 10.3 For Education
 

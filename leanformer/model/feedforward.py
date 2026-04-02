@@ -39,6 +39,17 @@ class GatedFeedForward(nn.Module):
         self.gate_proj = LowRankLinear(d_model, d_ff, rank)
         self.down_proj = LowRankLinear(d_ff, d_model, rank)
 
+        # Fix SwiGLU multiplicative dead zone: LowRankLinear inits B=0
+        # (LoRA pattern). For SwiGLU gating hidden = up(x) * SiLU(gate(x)),
+        # both outputs are zero when B=0, so neither receives gradients —
+        # a permanent deadlock. Break it by giving all three FF projection
+        # B matrices small random values. down_proj also needs this:
+        # even with non-zero hidden, down_proj(hidden) = hidden @ A @ 0 = 0,
+        # making the entire FF contribution zero on the first forward pass.
+        nn.init.normal_(self.up_proj.B, std=0.01)
+        nn.init.normal_(self.gate_proj.B, std=0.01)
+        nn.init.normal_(self.down_proj.B, std=0.01)
+
         # Cheap activation gate — predicts which neurons matter
         self.activation_gate = LowRankLinear(d_model, d_ff, gate_rank, bias=False)
 

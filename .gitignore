@@ -24,6 +24,9 @@ deltas/*/
 # HuggingFace cache
 .cache/
 
+# Local working files — not for GitHub
+local/
+
 # Claude Code internal state
 .claude/
 memory/

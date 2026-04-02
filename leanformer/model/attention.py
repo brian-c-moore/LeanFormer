@@ -44,10 +44,24 @@ class TwoPassSparseAttention(nn.Module):
         self.v_proj = LowRankLinear(d_model, d_model, rank)
         self.out_proj = LowRankLinear(d_model, d_model, rank)
 
+        # Fix attention B=0 deadlock: LowRankLinear inits B=0, so
+        # Q=K=V=0, softmax produces uniform weights, output is zero
+        # for all positions, and gradients through B are exactly zero.
+        # Same class of bug as the SwiGLU deadlock in GatedFeedForward.
+        nn.init.normal_(self.q_proj.B, std=0.01)
+        nn.init.normal_(self.k_proj.B, std=0.01)
+        nn.init.normal_(self.v_proj.B, std=0.01)
+        nn.init.normal_(self.out_proj.B, std=0.01)
+
         # Pass 1 screening projections (even lower rank — much cheaper)
+        # topk is non-differentiable so screening B doesn't learn via
+        # gradient flow, but non-zero init gives meaningful initial
+        # candidate selection instead of arbitrary tie-breaking on zeros.
         self.screen_dim = d_model // 4
         self.q_screen = LowRankLinear(d_model, self.screen_dim, screening_rank)
         self.k_screen = LowRankLinear(d_model, self.screen_dim, screening_rank)
+        nn.init.normal_(self.q_screen.B, std=0.01)
+        nn.init.normal_(self.k_screen.B, std=0.01)
 
         self.dropout = nn.Dropout(dropout)
         self.scale = self.d_head ** -0.5

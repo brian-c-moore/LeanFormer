@@ -128,11 +128,26 @@ def main():
     optimizer_step = 0    # actual weight update counter
     best_val_loss = float("inf")
     training_log = []
+    start_epoch = 0
+
+    # Check for existing checkpoint to resume from
+    resume_state = load_training_state(output_dir, model, optimizer, scheduler, scaler)
+    if resume_state is not None:
+        optimizer_step, global_step, start_epoch, best_val_loss = resume_state
+        # Load model weights
+        model_path = output_dir / "pytorch_model.bin"
+        if model_path.exists():
+            model.load_state_dict(torch.load(model_path, map_location="cuda", weights_only=True))
+        # Load training log if available
+        log_path = output_dir / "training_log.json"
+        if log_path.exists():
+            with open(log_path) as f:
+                training_log = json.load(f)
 
     console.print("[bold green]Starting training...[/bold green]\n")
     train_start = time.perf_counter()
 
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
         model.train()
         epoch_loss = 0.0
         epoch_lm_loss = 0.0
@@ -178,7 +193,11 @@ def main():
                     vram = torch.cuda.max_memory_allocated() / 1e9
 
                     stats = out.get("layer_stats", [])
+                    # ff_sparsity is always 0 during training (no mask applied);
+                    # use gate_loss as the health indicator instead
                     avg_ff_sparsity = sum(s.get("ff_sparsity", 0) for s in stats) / max(len(stats), 1)
+                    gate_losses_log = [s["gate_loss"].item() for s in stats if "gate_loss" in s]
+                    avg_gate_loss = sum(gate_losses_log) / max(len(gate_losses_log), 1) if gate_losses_log else 0.0
                     exit_layer = out.get("exit_layer", model_config.n_layers)
 
                     log_entry = {
@@ -187,6 +206,7 @@ def main():
                         "loss": avg_loss,
                         "lm_loss": avg_lm,
                         "aux_loss": avg_aux,
+                        "gate_loss": avg_gate_loss,
                         "lr": current_lr,
                         "tokens_per_sec": tokens_per_sec,
                         "vram_gb": vram,
@@ -202,7 +222,7 @@ def main():
                         f"lr {current_lr:.2e} | "
                         f"{tokens_per_sec:.0f} tok/s | "
                         f"vram {vram:.1f}GB | "
-                        f"ff_sp {avg_ff_sparsity:.2f} | "
+                        f"gate {avg_gate_loss:.4f} | "
                         f"exit {exit_layer}/{model_config.n_layers}"
                     )
 
@@ -222,7 +242,12 @@ def main():
                     )
                     if val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        save_checkpoint(model, model_config, output_dir, optimizer_step, val_loss)
+                        save_checkpoint(
+                            model, model_config, output_dir, optimizer_step, val_loss,
+                            optimizer=optimizer, scheduler=scheduler, scaler=scaler,
+                            epoch=epoch, global_step=global_step,
+                            best_val_loss=best_val_loss, training_log=training_log,
+                        )
                         console.print(f"  [green]New best! Saved to {output_dir}[/green]")
                     model.train()
 
@@ -232,6 +257,9 @@ def main():
                         model, model_config,
                         output_dir / f"step-{optimizer_step}",
                         optimizer_step, epoch_loss / epoch_steps,
+                        optimizer=optimizer, scheduler=scheduler, scaler=scaler,
+                        epoch=epoch, global_step=global_step,
+                        best_val_loss=best_val_loss, training_log=training_log,
                     )
 
         # End of epoch
@@ -250,7 +278,12 @@ def main():
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            save_checkpoint(model, model_config, output_dir, optimizer_step, val_loss)
+            save_checkpoint(
+                model, model_config, output_dir, optimizer_step, val_loss,
+                optimizer=optimizer, scheduler=scheduler, scaler=scaler,
+                epoch=epoch, global_step=global_step,
+                best_val_loss=best_val_loss, training_log=training_log,
+            )
             console.print(f"  [green]New best! Saved to {output_dir}[/green]")
         console.print()
 
@@ -268,12 +301,9 @@ def main():
     console.print(f"  Best val ppl:  {final_ppl:.1f}")
     console.print(f"  Checkpoint:    {output_dir}")
 
-    # Save training log
-    with open(output_dir / "training_log.json", "w") as f:
-        json.dump(training_log, f, indent=2)
-
-    # Save final checkpoint
-    save_checkpoint(model, model_config, output_dir, global_step, best_val_loss)
+    # Save final checkpoint (model weights only — training is done)
+    save_checkpoint(model, model_config, output_dir, optimizer_step, best_val_loss,
+                    training_log=training_log)
 
     # Compute and save model hash
     console.print("\nComputing model hash...")
@@ -481,14 +511,100 @@ def evaluate(model, val_loader, config):
     return total_loss / max(total_steps, 1)
 
 
-def save_checkpoint(model, config, output_dir, step, val_loss):
+def save_checkpoint(model, config, output_dir, step, val_loss,
+                    optimizer=None, scheduler=None, scaler=None,
+                    epoch=0, global_step=0, best_val_loss=None,
+                    training_log=None):
+    """Save a full training checkpoint (model + training state).
+
+    Writes to a temp file first, then renames — atomic on most filesystems
+    so a crash mid-save won't corrupt the checkpoint.
+    """
+    import random
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), output_dir / "pytorch_model.bin")
+
+    # Model weights (always saved)
+    model_path = output_dir / "pytorch_model.bin"
+    tmp_path = output_dir / "pytorch_model.bin.tmp"
+    torch.save(model.state_dict(), tmp_path)
+    tmp_path.replace(model_path)
+
     config.save(output_dir / "leanformer_config.json")
-    meta = {"step": step, "val_loss": val_loss, "val_ppl": math.exp(min(val_loss, 20))}
+
+    meta = {
+        "optimizer_step": step,
+        "global_step": global_step,
+        "epoch": epoch,
+        "val_loss": val_loss,
+        "val_ppl": math.exp(min(val_loss, 20)),
+        "best_val_loss": best_val_loss if best_val_loss is not None else val_loss,
+    }
     with open(output_dir / "training_meta.json", "w") as f:
         json.dump(meta, f, indent=2)
+
+    # Full training state for resume (optimizer, scheduler, scaler, RNG)
+    if optimizer is not None:
+        training_state = {
+            "optimizer": optimizer.state_dict(),
+            "scheduler": scheduler.state_dict() if scheduler else None,
+            "scaler": scaler.state_dict() if scaler else None,
+            "optimizer_step": step,
+            "global_step": global_step,
+            "epoch": epoch,
+            "best_val_loss": best_val_loss if best_val_loss is not None else val_loss,
+            "torch_rng": torch.random.get_rng_state(),
+            "cuda_rng": torch.cuda.get_rng_state() if torch.cuda.is_available() else None,
+            "python_rng": random.getstate(),
+        }
+        state_path = output_dir / "training_state.pt"
+        tmp_state = output_dir / "training_state.pt.tmp"
+        torch.save(training_state, tmp_state)
+        tmp_state.replace(state_path)
+
+    # Save training log if provided
+    if training_log is not None:
+        with open(output_dir / "training_log.json", "w") as f:
+            json.dump(training_log, f, indent=2)
+
+
+def load_training_state(output_dir, model, optimizer, scheduler, scaler):
+    """Load training state from a checkpoint for resuming training.
+
+    Returns (optimizer_step, global_step, epoch, best_val_loss) or None if
+    no training state file exists.
+    """
+    import random
+    output_dir = Path(output_dir)
+    state_path = output_dir / "training_state.pt"
+
+    if not state_path.exists():
+        return None
+
+    state = torch.load(state_path, map_location="cpu", weights_only=False)
+    optimizer.load_state_dict(state["optimizer"])
+    if scheduler and state.get("scheduler"):
+        scheduler.load_state_dict(state["scheduler"])
+    if scaler and state.get("scaler"):
+        scaler.load_state_dict(state["scaler"])
+
+    # Restore RNG states
+    if state.get("torch_rng") is not None:
+        torch.random.set_rng_state(state["torch_rng"])
+    if state.get("cuda_rng") is not None and torch.cuda.is_available():
+        torch.cuda.set_rng_state(state["cuda_rng"])
+    if state.get("python_rng") is not None:
+        random.setstate(state["python_rng"])
+
+    console.print(f"  [green]Resumed from step {state['optimizer_step']}, "
+                  f"epoch {state['epoch']}[/green]")
+
+    return (
+        state["optimizer_step"],
+        state["global_step"],
+        state["epoch"],
+        state["best_val_loss"],
+    )
 
 
 if __name__ == "__main__":
