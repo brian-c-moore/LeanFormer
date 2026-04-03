@@ -401,7 +401,7 @@ leanformer/
 
   scripts/
     prepare_reasoning_data.py       Download + tokenize training corpus
-    train_reasoning.py              Full training with checkpoint resume
+    train_reasoning.py              Governed training with checkpoint resume
     quick_train_validate.py         Quick pipeline validation
     compare_training.py               Baseline vs governed training comparison
     forge_all_domains.py            Forge all domain fact banks

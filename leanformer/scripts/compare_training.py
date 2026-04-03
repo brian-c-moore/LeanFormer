@@ -154,7 +154,7 @@ def train_baseline(model, loader, num_steps, lr, device, seed):
 # Governed training
 # ---------------------------------------------------------------------------
 
-def train_phase5(model, loader, num_steps, lr, device, seed, tmpdir):
+def train_governed(model, loader, num_steps, lr, device, seed, tmpdir):
     """Governed training: hierarchy, convergence, budget, router, audit."""
     torch.manual_seed(seed)
     model.train()
@@ -380,7 +380,7 @@ def train_phase5(model, loader, num_steps, lr, device, seed, tmpdir):
 # Reporting
 # ---------------------------------------------------------------------------
 
-def report(baseline, phase5, num_steps):
+def report(baseline, governed, num_steps):
     """Print comparison report."""
     print("\n" + "=" * 74)
     print("  COMPARISON: Baseline vs. Governed Training Pipeline")
@@ -393,9 +393,9 @@ def report(baseline, phase5, num_steps):
         return sum(losses[-window:]) / window
 
     bl_final = avg_loss(baseline["losses"], 20)
-    p5_final = avg_loss(phase5["losses"], 20)
+    p5_final = avg_loss(governed["losses"], 20)
     bl_first = avg_loss(baseline["losses"][:20], 20)
-    p5_first = avg_loss(phase5["losses"][:20], 20)
+    p5_first = avg_loss(governed["losses"][:20], 20)
 
     print(f"\n{'METRIC':<45} {'BASELINE':>12} {'GOVERNED':>12} {'DELTA':>10}")
     print("-" * 79)
@@ -404,14 +404,14 @@ def report(baseline, phase5, num_steps):
     print(f"{'Initial loss (first 20 steps avg)':<45} {bl_first:>12.4f} {p5_first:>12.4f} {'':>10}")
     print(f"{'Final loss (last 20 steps avg)':<45} {bl_final:>12.4f} {p5_final:>12.4f} {(p5_final-bl_final)/bl_final*100:>+9.1f}%")
 
-    if len(baseline["losses"]) >= 2 and len(phase5["losses"]) >= 2:
+    if len(baseline["losses"]) >= 2 and len(governed["losses"]) >= 2:
         bl_ppl = math.exp(min(bl_final, 20))
         p5_ppl = math.exp(min(p5_final, 20))
         print(f"{'Final perplexity':<45} {bl_ppl:>12.1f} {p5_ppl:>12.1f} {(p5_ppl-bl_ppl)/bl_ppl*100:>+9.1f}%")
 
     # Wall clock
     bl_wall = baseline["total_wall_ms"]
-    p5_wall = phase5["total_wall_ms"]
+    p5_wall = governed["total_wall_ms"]
     print(f"\n{'Total wall-clock time (ms)':<45} {bl_wall:>12.0f} {p5_wall:>12.0f} {(p5_wall-bl_wall)/bl_wall*100:>+9.1f}%")
     bl_avg_step = bl_wall / num_steps
     p5_avg_step = p5_wall / num_steps
@@ -419,37 +419,37 @@ def report(baseline, phase5, num_steps):
 
     # Gradient compute
     bl_gc = baseline["total_grad_computations"]
-    p5_gc = phase5["total_grad_computations"]
+    p5_gc = governed["total_grad_computations"]
     reduction = (1 - p5_gc / bl_gc) * 100 if bl_gc > 0 else 0
     print(f"\n{'Total gradient computations':<45} {bl_gc:>12,} {p5_gc:>12,} {-reduction:>+9.1f}%")
 
-    if phase5["active_param_fraction"]:
-        avg_active = sum(phase5["active_param_fraction"]) / len(phase5["active_param_fraction"])
+    if governed["active_param_fraction"]:
+        avg_active = sum(governed["active_param_fraction"]) / len(governed["active_param_fraction"])
         print(f"{'Avg active param fraction (governed)':<45} {'100.0%':>12} {avg_active*100:>11.1f}% {(avg_active-1)*100:>+9.1f}%")
 
     # Gradient routing
-    if phase5["groups_masked_per_step"]:
-        avg_masked = sum(phase5["groups_masked_per_step"]) / len(phase5["groups_masked_per_step"])
-        total_groups = len(phase5["final_states"])
+    if governed["groups_masked_per_step"]:
+        avg_masked = sum(governed["groups_masked_per_step"]) / len(governed["groups_masked_per_step"])
+        total_groups = len(governed["final_states"])
         print(f"{'Avg groups masked per step (of {total_groups})':<45} {'0':>12} {avg_masked:>12.1f} {'':>10}")
 
     # Eval efficiency
     bl_eval = baseline["eval_calls"]
-    p5_eval = phase5["eval_calls"]
+    p5_eval = governed["eval_calls"]
     eval_red = (1 - p5_eval / bl_eval) * 100 if bl_eval > 0 else 0
     print(f"\n{'Evaluation calls':<45} {bl_eval:>12} {p5_eval:>12} {-eval_red:>+9.1f}%")
 
     # Governance machinery
     print(f"\n{'--- GOVERNANCE METRICS (governed only) ---':<45}")
-    print(f"{'Convergence transitions':<45} {'N/A':>12} {phase5['convergence_transitions']:>12}")
-    print(f"{'Hierarchy activations':<45} {'N/A':>12} {len(phase5['hierarchy_activations']):>12}")
-    print(f"{'Budget invariant violations':<45} {'N/A':>12} {phase5['budget_invariant_violations']:>12}")
-    print(f"{'Audit chain valid':<45} {'N/A':>12} {str(phase5.get('audit_chain_valid', 'N/A')):>12}")
-    print(f"{'Audit records':<45} {'N/A':>12} {phase5.get('audit_records', 0):>12}")
+    print(f"{'Convergence transitions':<45} {'N/A':>12} {governed['convergence_transitions']:>12}")
+    print(f"{'Hierarchy activations':<45} {'N/A':>12} {len(governed['hierarchy_activations']):>12}")
+    print(f"{'Budget invariant violations':<45} {'N/A':>12} {governed['budget_invariant_violations']:>12}")
+    print(f"{'Audit chain valid':<45} {'N/A':>12} {str(governed.get('audit_chain_valid', 'N/A')):>12}")
+    print(f"{'Audit records':<45} {'N/A':>12} {governed.get('audit_records', 0):>12}")
 
     # Final convergence states
     print(f"\n{'--- FINAL CONVERGENCE STATES ---':<45}")
-    for gid, state in sorted(phase5["final_states"].items()):
+    for gid, state in sorted(governed["final_states"].items()):
         print(f"  {gid:<40} {state}")
 
     # Loss curve comparison (sampled)
@@ -459,9 +459,9 @@ def report(baseline, phase5, num_steps):
     if num_steps - 1 not in sample_points:
         sample_points.append(min(num_steps - 1, len(baseline["losses"]) - 1))
     for i in sample_points:
-        if i < len(baseline["losses"]) and i < len(phase5["losses"]):
+        if i < len(baseline["losses"]) and i < len(governed["losses"]):
             bl_l = baseline["losses"][i]
-            p5_l = phase5["losses"][i]
+            p5_l = governed["losses"][i]
             diff = p5_l - bl_l
             print(f"  {i:>6}  {bl_l:>10.4f}  {p5_l:>10.4f}  {diff:>+10.4f}")
 
@@ -479,23 +479,23 @@ def report(baseline, phase5, num_steps):
     else:
         print(f"  Gradient compute: No reduction (hierarchy not yet differentiated)")
 
-    if phase5["convergence_transitions"] > 0:
-        print(f"  Convergence governance: ACTIVE ({phase5['convergence_transitions']} transitions)")
+    if governed["convergence_transitions"] > 0:
+        print(f"  Convergence governance: ACTIVE ({governed['convergence_transitions']} transitions)")
     else:
         print(f"  Convergence governance: No transitions (thresholds may need tuning)")
 
-    if len(phase5["hierarchy_activations"]) > 0:
-        print(f"  Hierarchy: ACTIVE ({len(phase5['hierarchy_activations'])} level activations)")
+    if len(governed["hierarchy_activations"]) > 0:
+        print(f"  Hierarchy: ACTIVE ({len(governed['hierarchy_activations'])} level activations)")
     else:
         print(f"  Hierarchy: Only L0 active (short run or slow convergence)")
 
-    if phase5["budget_invariant_violations"] == 0:
+    if governed["budget_invariant_violations"] == 0:
         print(f"  Budget invariant: HELD (0 violations across {num_steps} steps)")
     else:
-        print(f"  Budget invariant: VIOLATED {phase5['budget_invariant_violations']} times")
+        print(f"  Budget invariant: VIOLATED {governed['budget_invariant_violations']} times")
 
-    if phase5.get("audit_chain_valid"):
-        print(f"  Audit chain: VALID ({phase5.get('audit_records', 0)} records)")
+    if governed.get("audit_chain_valid"):
+        print(f"  Audit chain: VALID ({governed.get('audit_records', 0)} records)")
 
     if bl_eval > 0 and eval_red > 0:
         print(f"  Eval efficiency: {eval_red:.0f}% fewer eval calls")
@@ -571,11 +571,11 @@ def main():
     torch.manual_seed(args.seed)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        phase5_metrics = train_phase5(model_b, loader, args.steps, args.lr, device, args.seed, tmpdir)
-    print(f"  Done. Final loss: {phase5_metrics['losses'][-1]:.4f}")
+        governed_metrics = train_governed(model_b, loader, args.steps, args.lr, device, args.seed, tmpdir)
+    print(f"  Done. Final loss: {governed_metrics['losses'][-1]:.4f}")
 
     # --- Report ---
-    report(baseline_metrics, phase5_metrics, args.steps)
+    report(baseline_metrics, governed_metrics, args.steps)
 
     # Save raw metrics
     output = {
@@ -588,12 +588,12 @@ def main():
             k: v for k, v in baseline_metrics.items()
             if not isinstance(v, list) or len(v) < 500
         },
-        "phase5": {
-            k: v for k, v in phase5_metrics.items()
+        "governed": {
+            k: v for k, v in governed_metrics.items()
             if not isinstance(v, list) or len(v) < 500
         },
     }
-    results_path = Path("local/phase5_comparison.json")
+    results_path = Path("local/governed_comparison.json")
     results_path.parent.mkdir(parents=True, exist_ok=True)
     with open(results_path, "w") as f:
         json.dump(output, f, indent=2, default=str)

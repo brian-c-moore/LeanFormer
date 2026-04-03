@@ -280,11 +280,12 @@ def main():
                 scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
-                # Update convergence governors BEFORE optimizer.step()/zero_grad()
-                # (gradients are available now, they won't be after zero_grad)
+                # Capture gradient norms and update governors BEFORE step/zero_grad
+                # (gradients are live now, they won't be after zero_grad)
+                step_grad_norms = {gid: group.grad_norm() for gid, group in groups.items()}
                 for gid, group in groups.items():
                     if group.hierarchy_level in hierarchy.active_levels:
-                        governors[gid].update(group.grad_norm())
+                        governors[gid].update(step_grad_norms[gid])
 
                 scaler.step(optimizer)
                 scaler.update()
@@ -323,11 +324,11 @@ def main():
                 # Update eval pipeline
                 eval_results = eval_pipeline.step(optimizer_step)
 
-                # Audit log
+                # Audit log (uses step_grad_norms captured before zero_grad)
                 if optimizer_step % 10 == 0:  # Log every 10 steps to limit I/O
                     audit.log_step(
                         step=optimizer_step,
-                        gradient_norms={gid: groups[gid].grad_norm() for gid in groups},
+                        gradient_norms=step_grad_norms,
                         convergence_states={gid: gov.state.value for gid, gov in governors.items()},
                         budget_allocations=budget.allocations,
                         hierarchy_active_levels=sorted(hierarchy.active_levels),
