@@ -82,7 +82,13 @@ def main():
         reactivation_delta=0.15,
         reactivation_warmup=10,
     )
-    governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+    governors = {
+        gid: ConvergenceGovernor(
+            gid, gov_config,
+            initially_active=(groups[gid].hierarchy_level == 0),
+        )
+        for gid in groups
+    }
 
     hierarchy = HierarchyManager(
         groups, governors,
@@ -193,6 +199,10 @@ def main():
                 # Hierarchy
                 hierarchy.step(optimizer_step)
                 if hierarchy.active_levels != prev_active_levels:
+                    new_levels = hierarchy.active_levels - prev_active_levels
+                    for gid, group in groups.items():
+                        if group.hierarchy_level in new_levels:
+                            governors[gid].activate()
                     trainable = [p for p in model.parameters() if p.requires_grad]
                     if trainable:
                         optimizer = torch.optim.AdamW(trainable, lr=1e-3)
@@ -379,9 +389,57 @@ def main():
         "state/EMA mismatch detected",
     )
 
+    # 11. Frozen groups were PENDING before hierarchy activation, not ACTIVE
+    # Check early audit records — L1+ groups should show PENDING
+    early_records = [r for r in step_records if r.get("step", 999) <= 10]
+    frozen_were_pending = True
+    frozen_detail = ""
+    if early_records:
+        first_rec = early_records[0]
+        states_at_start = first_rec.get("convergence_states", {})
+        for gid in group_ids:
+            if groups[gid].hierarchy_level > 0:
+                state_val = states_at_start.get(gid, "MISSING")
+                if state_val != "PENDING":
+                    frozen_were_pending = False
+                    frozen_detail = f"{gid} was {state_val}, expected PENDING"
+                    break
+    else:
+        frozen_were_pending = False
+        frozen_detail = "no early audit records"
+    check(
+        "Frozen groups start as PENDING",
+        frozen_were_pending,
+        "all L1+ groups were PENDING before hierarchy activation",
+        frozen_detail,
+    )
+
+    # 12. Budget allocates zero to PENDING groups
+    budget_zero_for_pending = True
+    budget_detail = ""
+    if early_records:
+        first_allocs = early_records[0].get("budget_allocations", {})
+        for gid in group_ids:
+            if groups[gid].hierarchy_level > 0:
+                alloc = first_allocs.get(gid, -1)
+                if alloc != 0.0:
+                    budget_zero_for_pending = False
+                    budget_detail = f"{gid} got {alloc}, expected 0.0"
+                    break
+    else:
+        budget_zero_for_pending = False
+        budget_detail = "no early audit records"
+    check(
+        "Budget zero for PENDING groups",
+        budget_zero_for_pending,
+        "all L1+ groups received 0.0 budget before activation",
+        budget_detail,
+    )
+
     # Final summary
+    total_checks = passed + failed
     print(f"\n{'='*60}")
-    print(f"  {passed} passed, {failed} failed out of 10 checks")
+    print(f"  {passed} passed, {failed} failed out of {total_checks} checks")
     if failed == 0:
         print("  ALL VALIDATIONS PASSED")
     else:

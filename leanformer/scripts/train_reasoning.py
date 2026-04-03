@@ -133,7 +133,13 @@ def main():
         reactivation_delta=0.15,
         reactivation_warmup=100,
     )
-    governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+    governors = {
+        gid: ConvergenceGovernor(
+            gid, gov_config,
+            initially_active=(groups[gid].hierarchy_level == 0),
+        )
+        for gid in groups
+    }
 
     # Coarse-to-fine hierarchy
     hierarchy = HierarchyManager(
@@ -301,6 +307,10 @@ def main():
                 # Rebuild optimizer if hierarchy activated new levels
                 if hierarchy.active_levels != prev_active_levels:
                     new_levels = hierarchy.active_levels - prev_active_levels
+                    # Activate governors for newly activated groups
+                    for gid, group in groups.items():
+                        if group.hierarchy_level in new_levels:
+                            governors[gid].activate()
                     console.print(
                         f"  [yellow]HIERARCHY step {optimizer_step}: "
                         f"activated L{',L'.join(str(l) for l in sorted(new_levels))} "

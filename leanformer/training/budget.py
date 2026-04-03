@@ -56,10 +56,17 @@ class FederatedBudget:
         self.governors = governors
         self.config = config or BudgetConfig()
 
-        # Current allocations (uniform initial)
-        n = len(group_ids)
-        uniform = self.config.master_budget / n if n > 0 else 0
-        self.allocations: dict[str, float] = {gid: uniform for gid in group_ids}
+        # Current allocations (uniform across non-PENDING groups)
+        active_ids = [
+            gid for gid in group_ids
+            if gid in governors and governors[gid].state != ConvergenceState.PENDING
+        ]
+        n_active = len(active_ids) if active_ids else 1
+        uniform = self.config.master_budget / n_active
+        self.allocations: dict[str, float] = {
+            gid: (uniform if gid in active_ids else 0.0)
+            for gid in group_ids
+        }
 
         # Learning-need tracking
         self._initial_gradient_emas: dict[str, float | None] = {gid: None for gid in group_ids}
@@ -116,6 +123,11 @@ class FederatedBudget:
             if gid not in self.governors:
                 continue
             gov = self.governors[gid]
+
+            # Pending groups get zero allocation — not yet activated by hierarchy
+            if gov.state == ConvergenceState.PENDING:
+                self.allocations[gid] = 0.0
+                continue
 
             # Converged groups get maintenance allocation only
             if gov.state == ConvergenceState.CONVERGED:

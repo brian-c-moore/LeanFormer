@@ -1,9 +1,10 @@
 """
 Convergence Governor
 
-Per-group convergence detection with a four-state state machine:
-ACTIVE → COOLING → CONVERGED → AWAKENED → ACTIVE
+Per-group convergence detection with a five-state state machine:
+PENDING → ACTIVE → COOLING → CONVERGED → AWAKENED → ACTIVE
 
+Groups start in PENDING until the hierarchy activates their level.
 Each parameter group gets its own governor that tracks gradient EMA,
 loss contribution, and transitions through convergence states.
 """
@@ -19,6 +20,7 @@ import torch
 
 
 class ConvergenceState(enum.Enum):
+    PENDING = "PENDING"      # Not yet activated by hierarchy
     ACTIVE = "ACTIVE"
     COOLING = "COOLING"
     CONVERGED = "CONVERGED"
@@ -62,10 +64,11 @@ class ConvergenceSignal:
 
 
 class ConvergenceGovernor:
-    """Per-group convergence governor with four-state state machine.
+    """Per-group convergence governor with five-state state machine.
 
+    Groups start in PENDING until the hierarchy activates their level.
     Tracks gradient EMA and loss contribution for a single parameter group.
-    Transitions through ACTIVE → COOLING → CONVERGED → AWAKENED → ACTIVE.
+    Transitions: PENDING → ACTIVE → COOLING → CONVERGED → AWAKENED → ACTIVE.
     Toggles requires_grad on state transitions.
     """
 
@@ -73,10 +76,11 @@ class ConvergenceGovernor:
         self,
         group_id: str,
         config: ConvergenceConfig | None = None,
+        initially_active: bool = True,
     ):
         self.group_id = group_id
         self.config = config or ConvergenceConfig()
-        self.state = ConvergenceState.ACTIVE
+        self.state = ConvergenceState.ACTIVE if initially_active else ConvergenceState.PENDING
         self.step = 0
 
         # Gradient EMA tracking
@@ -93,6 +97,7 @@ class ConvergenceGovernor:
 
         # Budget multiplier per state (used by FederatedBudget)
         self._budget_multipliers = {
+            ConvergenceState.PENDING: 0.0,
             ConvergenceState.ACTIVE: 1.0,
             ConvergenceState.COOLING: 0.5,
             ConvergenceState.CONVERGED: 0.05,
@@ -113,6 +118,16 @@ class ConvergenceGovernor:
         """Subscribe to state transition signals."""
         self._subscribers.append(callback)
 
+    def activate(self):
+        """Transition from PENDING to ACTIVE. Called by hierarchy when level activates."""
+        if self.state == ConvergenceState.PENDING:
+            old_state = self.state
+            self.state = ConvergenceState.ACTIVE
+            self.gradient_ema = 1.0  # Start high to avoid immediate COOLING
+            self._ema_initialized = False
+            self._cooling_counter = 0
+            self._emit_signal(old_state, self.state)
+
     def update(self, grad_norm: float, loss_contribution: float | None = None) -> ConvergenceState:
         """Update governor with current step's gradient norm.
 
@@ -124,6 +139,10 @@ class ConvergenceGovernor:
         Returns:
             Current state after any transitions.
         """
+        # PENDING groups don't track — they haven't started training
+        if self.state == ConvergenceState.PENDING:
+            return self.state
+
         self.step += 1
 
         # Update gradient EMA

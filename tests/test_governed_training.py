@@ -376,7 +376,11 @@ class TestConvergenceGovernor:
         states_seen.append(gov.state)
         assert gov.state == ConvergenceState.ACTIVE
 
-        assert set(states_seen) == set(ConvergenceState)
+        # PENDING is not part of the convergence cycle — it's a pre-activation state
+        assert set(states_seen) == {
+            ConvergenceState.ACTIVE, ConvergenceState.COOLING,
+            ConvergenceState.CONVERGED, ConvergenceState.AWAKENED,
+        }
 
     def test_signal_emission(self):
         """Signals fire on every state transition with correct payload."""
@@ -2074,7 +2078,13 @@ class TestFullIntegration:
             converged_threshold=0.001,  # Don't converge fully — keep training
             confirmation_window=100,
         )
-        governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+        governors = {
+            gid: ConvergenceGovernor(
+                gid, gov_config,
+                initially_active=(groups[gid].hierarchy_level == 0),
+            )
+            for gid in groups
+        }
 
         # Hierarchy
         hierarchy = HierarchyManager(
@@ -2166,19 +2176,29 @@ class TestFullIntegration:
             if not router.in_warmup:
                 apply_gradient_mask(small_model, groups, routing, group_ids)
 
+            # Capture grad norms and update governors BEFORE step/zero_grad
+            step_grad_norms = {gid: groups[gid].grad_norm() for gid, group in groups.items()}
+            for gid, group in groups.items():
+                if group.hierarchy_level in hierarchy.active_levels:
+                    governors[gid].update(step_grad_norms[gid])
+
             optimizer.step()
             router_optim.step()
+            optimizer.zero_grad()
             router.step()
 
             losses.append(loss.item())
 
-            # Update governors
-            for gid, group in groups.items():
-                if group.hierarchy_level in hierarchy.active_levels:
-                    governors[gid].update(group.grad_norm())
-
             # Update hierarchy
+            prev_levels = set(hierarchy.active_levels)
             lr_multipliers = hierarchy.step(step)
+            if hierarchy.active_levels != prev_levels:
+                for gid, group in groups.items():
+                    if group.hierarchy_level in (hierarchy.active_levels - prev_levels):
+                        governors[gid].activate()
+                trainable = [p for p in small_model.parameters() if p.requires_grad]
+                if trainable:
+                    optimizer = torch.optim.AdamW(trainable, lr=1e-3)
 
             # Update budget
             budget_allocs = budget.step(step)
@@ -2186,21 +2206,15 @@ class TestFullIntegration:
             # Eval pipeline
             eval_results = eval_pipeline.step(step)
 
-            # Audit
+            # Audit (uses cached step_grad_norms)
             audit.log_step(
                 step=step,
-                gradient_norms={gid: groups[gid].grad_norm() for gid in groups},
+                gradient_norms=step_grad_norms,
                 convergence_states={gid: gov.state.value for gid, gov in governors.items()},
                 budget_allocations=budget_allocs,
                 loss_before=loss.item(),
                 hierarchy_active_levels=sorted(hierarchy.active_levels),
             )
-
-            # Rebuild optimizer if hierarchy activated new levels
-            if hierarchy.is_level_active(1) and step > 0:
-                trainable = [p for p in small_model.parameters() if p.requires_grad]
-                if trainable:
-                    optimizer = torch.optim.AdamW(trainable, lr=1e-3)
 
             # Verify budget invariant every step
             assert budget.verify_invariant(), f"Budget invariant violated at step {step}"

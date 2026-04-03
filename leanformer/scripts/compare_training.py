@@ -175,7 +175,13 @@ def train_governed(model, loader, num_steps, lr, device, seed, tmpdir):
         reactivation_delta=0.2,
         reactivation_warmup=10,
     )
-    governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+    governors = {
+        gid: ConvergenceGovernor(
+            gid, gov_config,
+            initially_active=(groups[gid].hierarchy_level == 0),
+        )
+        for gid in groups
+    }
 
     # --- Hierarchy ---
     hierarchy = HierarchyManager(
@@ -321,6 +327,10 @@ def train_governed(model, loader, num_steps, lr, device, seed, tmpdir):
 
         # Rebuild optimizer if hierarchy changed
         if hierarchy.active_levels != prev_active_levels:
+            new_levels = hierarchy.active_levels - prev_active_levels
+            for gid, group in groups.items():
+                if group.hierarchy_level in new_levels:
+                    governors[gid].activate()
             trainable = [p for p in model.parameters() if p.requires_grad]
             if trainable:
                 optimizer = torch.optim.AdamW(trainable, lr=lr, weight_decay=0.01)
