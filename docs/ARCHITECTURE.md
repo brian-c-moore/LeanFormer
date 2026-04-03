@@ -403,7 +403,7 @@ leanformer/
     prepare_reasoning_data.py       Download + tokenize training corpus
     train_reasoning.py              Full training with checkpoint resume
     quick_train_validate.py         Quick pipeline validation
-    compare_phase5.py               Baseline vs governed training comparison
+    compare_training.py               Baseline vs governed training comparison
     forge_all_domains.py            Forge all domain fact banks
     demo.py                         Demo with rich output
 

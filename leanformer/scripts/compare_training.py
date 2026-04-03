@@ -9,7 +9,7 @@ Measures: loss convergence, gradient compute, wall-clock time, eval efficiency.
 CPU-compatible (no CUDA required).
 
 Usage:
-    python -m leanformer.scripts.compare_phase5 [--steps 300] [--seed 42]
+    python -m leanformer.scripts.compare_training [--steps 300] [--seed 42]
 """
 
 import argparse

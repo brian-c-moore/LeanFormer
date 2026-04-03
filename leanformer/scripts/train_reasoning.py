@@ -1,8 +1,11 @@
 """
-Train LeanFormer Reasoning Core (~66M params, d_model=768) on knowledge-naive corpus.
+Train LeanFormer Reasoning Core with governed training pipeline.
 
 Uses the tokenized dataset from prepare_reasoning_data.py.
 CUDA mixed precision (fp16) with GradScaler throughout.
+
+Governed training: per-group convergence governors, coarse-to-fine hierarchy
+activation, federated budget allocation, gradient routing, SHA-256 audit chain.
 
 After main training: exit head tuning phase (1000 steps, lr=1e-3).
 
@@ -27,6 +30,13 @@ from .. import DEFAULT_TOKENIZER
 from ..model.config import LeanFormerConfig
 from ..model.leanformer import LeanFormer
 from ..knowledge_plane.dfs import compute_model_hash
+from ..training.param_groups import build_param_groups, load_registry
+from ..training.convergence import ConvergenceConfig, ConvergenceGovernor, ConvergenceState
+from ..training.hierarchy import HierarchyConfig, HierarchyManager
+from ..training.budget import BudgetConfig, FederatedBudget
+from ..training.router import GradientRouter, RouterConfig, apply_gradient_mask
+from ..training.audit import AuditSink, AuditQuery
+from ..training.eval_pipeline import EvalConfig, EvalPipeline
 
 console = Console()
 
@@ -108,8 +118,78 @@ def main():
         num_workers=2, pin_memory=True,
     )
 
-    # Optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    # === Governed Training Setup ===
+    registry = load_registry()
+    groups = build_param_groups(model, registry)
+    group_ids = list(groups.keys())
+
+    # Per-group convergence governors
+    gov_config = ConvergenceConfig(
+        ema_decay=0.99,
+        cooling_threshold=0.5,
+        cooling_window=200,
+        converged_threshold=0.1,
+        confirmation_window=500,
+        reactivation_delta=0.15,
+        reactivation_warmup=100,
+    )
+    governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+
+    # Coarse-to-fine hierarchy
+    hierarchy = HierarchyManager(
+        groups, governors,
+        config=HierarchyConfig(warmup_steps=100, emergency_fraction=0.80),
+        total_steps=total_steps,
+    )
+
+    # Federated budget
+    budget = FederatedBudget(
+        group_ids, governors,
+        config=BudgetConfig(eval_window=50, alpha=0.4, beta=0.3, gamma=0.3),
+    )
+
+    # Gradient router
+    router = GradientRouter(
+        model_config.d_model, len(group_ids),
+        config=RouterConfig(
+            warmup_steps=int(total_steps * 0.05),
+            max_active_groups=max(len(group_ids) // 2, 2),
+            entropy_coeff=0.01,
+            balance_window=200,
+        ),
+    ).cuda()
+    router_optim = torch.optim.Adam(router.parameters(), lr=1e-3)
+
+    # SHA-256 audit log
+    audit_log_path = output_dir / "audit.jsonl"
+    audit = AuditSink(audit_log_path)
+
+    # Change-triggered eval
+    metric_dep_map = registry.get("metric_dependency_map", {"perplexity": ["all"]})
+
+    def eval_ppl():
+        return evaluate(model, val_loader, model_config)
+
+    eval_pipeline = EvalPipeline(
+        metric_dep_map,
+        {"perplexity": eval_ppl},
+        config=EvalConfig(max_evals_per_window=3, eval_window_steps=500),
+    )
+    for gov in governors.values():
+        gov.subscribe(eval_pipeline.on_convergence_signal)
+
+    console.print(f"\n[bold cyan]Governed Training Pipeline[/bold cyan]")
+    console.print(f"  Parameter groups: {len(groups)}")
+    console.print(f"  Hierarchy levels: {sorted(hierarchy.levels.keys())}")
+    console.print(f"  Active at start:  L0 ({sum(g.param_count for g in groups.values() if g.hierarchy_level == 0):,} params)")
+    console.print(f"  Router warmup:    {router.config.warmup_steps} steps")
+    console.print(f"  Audit log:        {audit_log_path}")
+
+    # Optimizer — only trainable params (L0 initially)
+    optimizer = torch.optim.AdamW(
+        [p for p in model.parameters() if p.requires_grad],
+        lr=lr, weight_decay=weight_decay,
+    )
 
     # Cosine schedule with warmup
     def lr_lambda(step):
@@ -129,6 +209,7 @@ def main():
     best_val_loss = float("inf")
     training_log = []
     start_epoch = 0
+    prev_active_levels = set(hierarchy.active_levels)
 
     # Check for existing checkpoint to resume from
     resume_state = load_training_state(output_dir, model, optimizer, scheduler, scaler)
@@ -143,6 +224,20 @@ def main():
         if log_path.exists():
             with open(log_path) as f:
                 training_log = json.load(f)
+        # Load governance state if available
+        gov_state_path = output_dir / "governance_state.pt"
+        if gov_state_path.exists():
+            gov_state = torch.load(gov_state_path, map_location="cpu", weights_only=False)
+            for gid, gs in gov_state.get("governors", {}).items():
+                if gid in governors:
+                    governors[gid].load_state_dict(gs)
+            if "hierarchy" in gov_state:
+                hierarchy.load_state_dict(gov_state["hierarchy"])
+            if "budget" in gov_state:
+                budget.load_state_dict(gov_state["budget"])
+            if "router" in gov_state:
+                router.load_state_dict(gov_state["router"])
+            console.print(f"  [green]Resumed governance state[/green]")
 
     console.print("[bold green]Starting training...[/bold green]\n")
     train_start = time.perf_counter()
@@ -166,6 +261,14 @@ def main():
 
             scaler.scale(loss).backward()
 
+            # Gradient masking via router (after warmup)
+            if not router.in_warmup and (batch_idx + 1) % grad_accum == 0:
+                with torch.no_grad():
+                    positions = torch.arange(input_ids.shape[1], device=input_ids.device).unsqueeze(0)
+                    hidden = model.token_embedding(input_ids) + model.position_embedding(positions)
+                routing = router(hidden, group_ids)
+                apply_gradient_mask(model, groups, routing, group_ids)
+
             epoch_loss += out["loss"].item()
             epoch_lm_loss += out["lm_loss"].item()
             epoch_aux_loss += out["aux_loss"].item()
@@ -176,11 +279,60 @@ def main():
             if (batch_idx + 1) % grad_accum == 0:
                 scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
+
+                # Update convergence governors BEFORE optimizer.step()/zero_grad()
+                # (gradients are available now, they won't be after zero_grad)
+                for gid, group in groups.items():
+                    if group.hierarchy_level in hierarchy.active_levels:
+                        governors[gid].update(group.grad_norm())
+
                 scaler.step(optimizer)
                 scaler.update()
                 scheduler.step()
                 optimizer.zero_grad()
                 optimizer_step += 1
+
+                # --- Governance updates (per optimizer step) ---
+
+                # Update hierarchy
+                lr_multipliers = hierarchy.step(optimizer_step)
+
+                # Rebuild optimizer if hierarchy activated new levels
+                if hierarchy.active_levels != prev_active_levels:
+                    new_levels = hierarchy.active_levels - prev_active_levels
+                    console.print(
+                        f"  [yellow]HIERARCHY step {optimizer_step}: "
+                        f"activated L{',L'.join(str(l) for l in sorted(new_levels))} "
+                        f"(active: {sorted(hierarchy.active_levels)})[/yellow]"
+                    )
+                    trainable = [p for p in model.parameters() if p.requires_grad]
+                    if trainable:
+                        optimizer = torch.optim.AdamW(trainable, lr=lr, weight_decay=weight_decay)
+                        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+                        # Step scheduler to current position
+                        for _ in range(optimizer_step):
+                            scheduler.step()
+                    prev_active_levels = set(hierarchy.active_levels)
+
+                # Update budget
+                budget.step(optimizer_step)
+
+                # Update router
+                router.step()
+
+                # Update eval pipeline
+                eval_results = eval_pipeline.step(optimizer_step)
+
+                # Audit log
+                if optimizer_step % 10 == 0:  # Log every 10 steps to limit I/O
+                    audit.log_step(
+                        step=optimizer_step,
+                        gradient_norms={gid: groups[gid].grad_norm() for gid in groups},
+                        convergence_states={gid: gov.state.value for gid, gov in governors.items()},
+                        budget_allocations=budget.allocations,
+                        hierarchy_active_levels=sorted(hierarchy.active_levels),
+                        loss_before=out["loss"].item(),
+                    )
 
                 # Logging (per optimizer step)
                 if optimizer_step % logging_steps == 0:
@@ -193,12 +345,20 @@ def main():
                     vram = torch.cuda.max_memory_allocated() / 1e9
 
                     stats = out.get("layer_stats", [])
-                    # ff_sparsity is always 0 during training (no mask applied);
-                    # use gate_loss as the health indicator instead
-                    avg_ff_sparsity = sum(s.get("ff_sparsity", 0) for s in stats) / max(len(stats), 1)
                     gate_losses_log = [s["gate_loss"].item() for s in stats if "gate_loss" in s]
                     avg_gate_loss = sum(gate_losses_log) / max(len(gate_losses_log), 1) if gate_losses_log else 0.0
                     exit_layer = out.get("exit_layer", model_config.n_layers)
+
+                    # Governance telemetry
+                    n_active = sum(1 for g in governors.values() if g.state == ConvergenceState.ACTIVE)
+                    n_cooling = sum(1 for g in governors.values() if g.state == ConvergenceState.COOLING)
+                    n_converged = sum(1 for g in governors.values() if g.state == ConvergenceState.CONVERGED)
+                    active_params = sum(
+                        g.param_count for g in groups.values()
+                        if g.hierarchy_level in hierarchy.active_levels
+                    )
+                    total_params = sum(g.param_count for g in groups.values())
+                    active_frac = active_params / total_params
 
                     log_entry = {
                         "step": optimizer_step,
@@ -210,10 +370,21 @@ def main():
                         "lr": current_lr,
                         "tokens_per_sec": tokens_per_sec,
                         "vram_gb": vram,
-                        "ff_sparsity": avg_ff_sparsity,
                         "exit_layer": exit_layer,
+                        "gov_active": n_active,
+                        "gov_cooling": n_cooling,
+                        "gov_converged": n_converged,
+                        "hierarchy_levels": sorted(hierarchy.active_levels),
+                        "active_param_frac": round(active_frac, 3),
+                        "budget_invariant": budget.verify_invariant(),
+                        "router_warmup": router.in_warmup,
+                        "audit_records": audit.record_count,
                     }
                     training_log.append(log_entry)
+
+                    gov_str = f"A{n_active}/C{n_cooling}/V{n_converged}"
+                    lvl_str = ",".join(f"L{l}" for l in sorted(hierarchy.active_levels))
+                    rtr_str = "warmup" if router.in_warmup else "active"
 
                     console.print(
                         f"  step {optimizer_step:>6}/{total_steps} | "
@@ -223,7 +394,11 @@ def main():
                         f"{tokens_per_sec:.0f} tok/s | "
                         f"vram {vram:.1f}GB | "
                         f"gate {avg_gate_loss:.4f} | "
-                        f"exit {exit_layer}/{model_config.n_layers}"
+                        f"exit {exit_layer}/{model_config.n_layers} | "
+                        f"gov {gov_str} | "
+                        f"hier {lvl_str} | "
+                        f"rtr {rtr_str} | "
+                        f"params {active_frac:.0%}"
                     )
 
                     # Check for NaN
@@ -247,6 +422,12 @@ def main():
                             optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                             epoch=epoch, global_step=global_step,
                             best_val_loss=best_val_loss, training_log=training_log,
+                            governance_state={
+                                "governors": {gid: gov.state_dict() for gid, gov in governors.items()},
+                                "hierarchy": hierarchy.state_dict(),
+                                "budget": budget.state_dict(),
+                                "router": router.state_dict(),
+                            },
                         )
                         console.print(f"  [green]New best! Saved to {output_dir}[/green]")
                     model.train()
@@ -260,6 +441,12 @@ def main():
                         optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                         epoch=epoch, global_step=global_step,
                         best_val_loss=best_val_loss, training_log=training_log,
+                        governance_state={
+                            "governors": {gid: gov.state_dict() for gid, gov in governors.items()},
+                            "hierarchy": hierarchy.state_dict(),
+                            "budget": budget.state_dict(),
+                            "router": router.state_dict(),
+                        },
                     )
 
         # End of epoch
@@ -268,12 +455,20 @@ def main():
         val_loss = evaluate(model, val_loader, model_config)
         val_ppl = math.exp(min(val_loss, 20))
 
+        # Governance summary for epoch
+        states = {g.state.value: 0 for g in governors.values()}
+        for g in governors.values():
+            states[g.state.value] = states.get(g.state.value, 0) + 1
+
         console.print(
             f"\n[bold]Epoch {epoch+1}/{epochs}[/bold] | "
             f"train_loss: {avg_train_loss:.4f} | "
             f"val_loss: {val_loss:.4f} | "
             f"val_ppl: {val_ppl:.1f} | "
-            f"time: {epoch_elapsed/3600:.1f}h"
+            f"time: {epoch_elapsed/3600:.1f}h | "
+            f"gov: {states} | "
+            f"hier: {sorted(hierarchy.active_levels)} | "
+            f"audit: {audit.record_count} records"
         )
 
         if val_loss < best_val_loss:
@@ -283,6 +478,12 @@ def main():
                 optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                 epoch=epoch, global_step=global_step,
                 best_val_loss=best_val_loss, training_log=training_log,
+                governance_state={
+                    "governors": {gid: gov.state_dict() for gid, gov in governors.items()},
+                    "hierarchy": hierarchy.state_dict(),
+                    "budget": budget.state_dict(),
+                    "router": router.state_dict(),
+                },
             )
             console.print(f"  [green]New best! Saved to {output_dir}[/green]")
         console.print()
@@ -514,8 +715,8 @@ def evaluate(model, val_loader, config):
 def save_checkpoint(model, config, output_dir, step, val_loss,
                     optimizer=None, scheduler=None, scaler=None,
                     epoch=0, global_step=0, best_val_loss=None,
-                    training_log=None):
-    """Save a full training checkpoint (model + training state).
+                    training_log=None, governance_state=None):
+    """Save a full training checkpoint (model + training state + governance state).
 
     Writes to a temp file first, then renames — atomic on most filesystems
     so a crash mid-save won't corrupt the checkpoint.
@@ -561,6 +762,13 @@ def save_checkpoint(model, config, output_dir, step, val_loss,
         tmp_state = output_dir / "training_state.pt.tmp"
         torch.save(training_state, tmp_state)
         tmp_state.replace(state_path)
+
+    # Save governance state for resume
+    if governance_state is not None:
+        gov_path = output_dir / "governance_state.pt"
+        tmp_gov = output_dir / "governance_state.pt.tmp"
+        torch.save(governance_state, tmp_gov)
+        tmp_gov.replace(gov_path)
 
     # Save training log if provided
     if training_log is not None:
