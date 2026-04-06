@@ -34,7 +34,6 @@ from ..training.param_groups import build_param_groups, load_registry
 from ..training.convergence import ConvergenceConfig, ConvergenceGovernor, ConvergenceState
 from ..training.hierarchy import HierarchyConfig, HierarchyManager
 from ..training.budget import BudgetConfig, FederatedBudget
-from ..training.router import GradientRouter, RouterConfig, apply_gradient_mask
 from ..training.audit import AuditSink, AuditQuery
 from ..training.eval_pipeline import EvalConfig, EvalPipeline
 
@@ -154,18 +153,6 @@ def main():
         config=BudgetConfig(eval_window=50, alpha=0.4, beta=0.3, gamma=0.3),
     )
 
-    # Gradient router
-    router = GradientRouter(
-        model_config.d_model, len(group_ids),
-        config=RouterConfig(
-            warmup_steps=int(total_steps * 0.05),
-            max_active_groups=max(len(group_ids) // 2, 2),
-            entropy_coeff=0.01,
-            balance_window=200,
-        ),
-    ).cuda()
-    router_optim = torch.optim.Adam(router.parameters(), lr=1e-3)
-
     # SHA-256 audit log
     audit_log_path = output_dir / "audit.jsonl"
     audit = AuditSink(audit_log_path)
@@ -188,7 +175,6 @@ def main():
     console.print(f"  Parameter groups: {len(groups)}")
     console.print(f"  Hierarchy levels: {sorted(hierarchy.levels.keys())}")
     console.print(f"  Active at start:  L0 ({sum(g.param_count for g in groups.values() if g.hierarchy_level == 0):,} params)")
-    console.print(f"  Router warmup:    {router.config.warmup_steps} steps")
     console.print(f"  Audit log:        {audit_log_path}")
 
     # Optimizer — only trainable params (L0 initially)
@@ -241,8 +227,6 @@ def main():
                 hierarchy.load_state_dict(gov_state["hierarchy"])
             if "budget" in gov_state:
                 budget.load_state_dict(gov_state["budget"])
-            if "router" in gov_state:
-                router.load_state_dict(gov_state["router"])
             console.print(f"  [green]Resumed governance state[/green]")
 
     console.print("[bold green]Starting training...[/bold green]\n")
@@ -266,14 +250,6 @@ def main():
                 loss = out["loss"] / grad_accum
 
             scaler.scale(loss).backward()
-
-            # Gradient masking via router (after warmup)
-            if not router.in_warmup and (batch_idx + 1) % grad_accum == 0:
-                with torch.no_grad():
-                    positions = torch.arange(input_ids.shape[1], device=input_ids.device).unsqueeze(0)
-                    hidden = model.token_embedding(input_ids) + model.position_embedding(positions)
-                routing = router(hidden, group_ids)
-                apply_gradient_mask(model, groups, routing, group_ids)
 
             epoch_loss += out["loss"].item()
             epoch_lm_loss += out["lm_loss"].item()
@@ -327,9 +303,6 @@ def main():
 
                 # Update budget
                 budget.step(optimizer_step)
-
-                # Update router
-                router.step()
 
                 # Update eval pipeline
                 eval_results = eval_pipeline.step(optimizer_step)
@@ -388,14 +361,12 @@ def main():
                         "hierarchy_levels": sorted(hierarchy.active_levels),
                         "active_param_frac": round(active_frac, 3),
                         "budget_invariant": budget.verify_invariant(),
-                        "router_warmup": router.in_warmup,
                         "audit_records": audit.record_count,
                     }
                     training_log.append(log_entry)
 
                     gov_str = f"A{n_active}/C{n_cooling}/V{n_converged}"
                     lvl_str = ",".join(f"L{l}" for l in sorted(hierarchy.active_levels))
-                    rtr_str = "warmup" if router.in_warmup else "active"
 
                     console.print(
                         f"  step {optimizer_step:>6}/{total_steps} | "
@@ -408,7 +379,6 @@ def main():
                         f"exit {exit_layer}/{model_config.n_layers} | "
                         f"gov {gov_str} | "
                         f"hier {lvl_str} | "
-                        f"rtr {rtr_str} | "
                         f"params {active_frac:.0%}"
                     )
 
@@ -437,7 +407,6 @@ def main():
                                 "governors": {gid: gov.state_dict() for gid, gov in governors.items()},
                                 "hierarchy": hierarchy.state_dict(),
                                 "budget": budget.state_dict(),
-                                "router": router.state_dict(),
                             },
                         )
                         console.print(f"  [green]New best! Saved to {output_dir}[/green]")
@@ -456,8 +425,7 @@ def main():
                             "governors": {gid: gov.state_dict() for gid, gov in governors.items()},
                             "hierarchy": hierarchy.state_dict(),
                             "budget": budget.state_dict(),
-                            "router": router.state_dict(),
-                        },
+                                },
                     )
 
         # End of epoch
@@ -493,7 +461,6 @@ def main():
                     "governors": {gid: gov.state_dict() for gid, gov in governors.items()},
                     "hierarchy": hierarchy.state_dict(),
                     "budget": budget.state_dict(),
-                    "router": router.state_dict(),
                 },
             )
             console.print(f"  [green]New best! Saved to {output_dir}[/green]")

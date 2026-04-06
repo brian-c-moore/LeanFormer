@@ -75,7 +75,14 @@ class DepthController(nn.Module):
         Auxiliary loss that trains the exit classifier.
         Uses _with_logits for mixed precision (autocast) safety.
         """
-        exit_logits = self.exit_head(hidden.mean(dim=1))
+        # If exit head is frozen, run without building backward graph
+        frozen = not any(p.requires_grad for p in self.exit_head.parameters())
+        if frozen:
+            with torch.no_grad():
+                exit_logits = self.exit_head(hidden.mean(dim=1))
+            exit_logits = exit_logits.detach()
+        else:
+            exit_logits = self.exit_head(hidden.mean(dim=1))
 
         if current_depth >= target_depth:
             target = torch.ones_like(exit_logits)

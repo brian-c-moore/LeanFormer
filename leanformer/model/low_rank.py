@@ -44,10 +44,15 @@ class LowRankLinear(nn.Module):
         nn.init.zeros_(self.B)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Compute x @ A @ B without materializing the full (in x out) matrix
-        out = x @ self.A @ self.B
+        # When both factors are frozen, detach so autograd skips this branch
+        # entirely during backward. This is what delivers wall-clock savings
+        # for converged parameter groups.
+        A = self.A if self.A.requires_grad else self.A.detach()
+        B = self.B if self.B.requires_grad else self.B.detach()
+        out = x @ A @ B
         if self.bias is not None:
-            out = out + self.bias
+            bias = self.bias if self.bias.requires_grad else self.bias.detach()
+            out = out + bias
         return out
 
     def effective_parameters(self) -> int:
