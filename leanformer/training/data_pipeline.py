@@ -83,8 +83,9 @@ class SampleScorer:
             if batch is None:
                 continue
 
-            input_ids = batch["input_ids"]
-            labels = batch.get("labels", input_ids.clone())
+            device = next(model.parameters()).device
+            input_ids = batch["input_ids"].to(device)
+            labels = batch.get("labels", input_ids.clone()).to(device)
 
             result = model(input_ids, labels=labels, training=False)
             if "loss" in result:
