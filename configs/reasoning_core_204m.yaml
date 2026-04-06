@@ -21,15 +21,15 @@ data:
 
 training:
   output_dir: ./checkpoints/reasoning_core
-  epochs: 3
+  epochs: 1
   batch_size: 1
   gradient_accumulation: 64
   lr: 2.0e-4
-  warmup_steps: 3000
+  warmup_steps: 1000
   weight_decay: 0.01
   max_grad_norm: 1.0
   fp16: true
   logging_steps: 100
-  save_steps: 5000
-  eval_steps: 1000
+  save_steps: 2000
+  eval_steps: 500
   run_name: leanformer-reasoning-core-204m
