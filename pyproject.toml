@@ -36,6 +36,8 @@ dependencies = [
     "numpy>=1.26.4",
     "einops>=0.8.0",
     "pyyaml>=6.0",
+    "requests>=2.25.0",
+    "lm-eval>=0.4.0",
 ]
 
 [project.optional-dependencies]

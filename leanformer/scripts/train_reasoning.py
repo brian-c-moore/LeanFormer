@@ -36,6 +36,7 @@ from ..training.hierarchy import HierarchyConfig, HierarchyManager
 from ..training.budget import BudgetConfig, FederatedBudget
 from ..training.audit import AuditSink, AuditQuery
 from ..training.eval_pipeline import EvalConfig, EvalPipeline
+from ..training.data_pipeline import SampleScorer, TieredSampler, DataPipelineConfig
 
 console = Console()
 
@@ -107,9 +108,24 @@ def main():
     console.print(f"  Epochs: {epochs} ({total_steps:,} optimizer steps, {total_micro_steps:,} micro-steps)")
     console.print()
 
+    # Governed data pipeline: score samples and create tiered sampler
+    console.print("Scoring sample difficulty for tiered sampling...")
+    scorer = SampleScorer(DataPipelineConfig())
+    score_result = scorer.score_samples(model, train_ds, batch_size=batch_size, max_samples=min(5000, train_size))
+    tiers = score_result["tiers"]
+    tier_counts = {t: len(indices) for t, indices in tiers.items()}
+    console.print(f"  Tiers: Mastered={tier_counts.get(0,0)}, Learning={tier_counts.get(1,0)}, "
+                  f"Struggling={tier_counts.get(2,0)}, Failing={tier_counts.get(3,0)}, "
+                  f"Excluded={len(score_result['excluded'])}")
+
+    tiered_sampler = TieredSampler(
+        tiers, batch_size=batch_size,
+        num_batches=micro_steps_per_epoch,
+    )
+
     # DataLoaders
     train_loader = DataLoader(
-        train_ds, batch_size=batch_size, shuffle=True, drop_last=True,
+        train_ds, batch_sampler=tiered_sampler,
         num_workers=2, pin_memory=True,
     )
     val_loader = DataLoader(

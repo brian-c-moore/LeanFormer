@@ -26,6 +26,9 @@ from ..model.config import LeanFormerConfig
 from ..model.leanformer import LeanFormer
 from ..knowledge_plane.registry import DeltaRegistry
 from ..knowledge_plane.forge import KnowledgeForge, load_fact_bank
+from ..training.forge_gate import ForgeReadinessGate, ForgeGateConfig
+from ..training.convergence import ConvergenceGovernor, ConvergenceConfig, ConvergenceState
+from ..training.param_groups import build_param_groups, load_registry
 
 
 def main():
@@ -74,6 +77,48 @@ def main():
     tokenizer.pad_token = tokenizer.eos_token
     model_hash = (ckpt / "model_hash.txt").read_text().strip()
     print(f"Model hash: {model_hash[:16]}...")
+
+    # Check forge readiness via governance state
+    gov_state_path = ckpt / "governance_state.pt"
+    if gov_state_path.exists():
+        gov_state = torch.load(gov_state_path, map_location="cpu", weights_only=False)
+        param_registry = load_registry()
+        groups = build_param_groups(model, param_registry)
+
+        # Map domains to target groups (forge targets are L1 projections)
+        target_groups = {
+            "chemistry": ["attention_output", "ff_projections"],
+            "cs": ["attention_output", "ff_projections"],
+            "general": ["attention_output", "ff_projections"],
+        }
+
+        gov_config = ConvergenceConfig()
+        governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+        for gid, gs in gov_state.get("governors", {}).items():
+            if gid in governors:
+                governors[gid].load_state_dict(gs)
+
+        gate = ForgeReadinessGate(governors, target_groups, ForgeGateConfig(stability_window=0))
+
+        # Report readiness
+        print("\nForge readiness (from training governance state):")
+        for domain in ["chemistry", "cs", "general"]:
+            target_states = {
+                gid: governors[gid].state.value
+                for gid in target_groups.get(domain, [])
+                if gid in governors
+            }
+            all_converged = all(
+                governors[gid].state in (ConvergenceState.CONVERGED, ConvergenceState.COOLING)
+                for gid in target_groups.get(domain, [])
+                if gid in governors
+            )
+            status = "READY" if all_converged else "WARNING: target groups not converged"
+            print(f"  {domain}: {status} {target_states}")
+        print()
+    else:
+        print("  No governance state found — forging without readiness check")
+        print()
 
     # Create registry
     registry = DeltaRegistry(

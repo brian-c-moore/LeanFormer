@@ -98,10 +98,16 @@ python -m leanformer.scripts.prepare_reasoning_data
 # 2. Train reasoning core
 python -m leanformer.scripts.train_reasoning
 
-# 3. Forge domain knowledge into deltas
+# 3. Evaluate on standard benchmarks (CORE tasks)
+python -m leanformer.scripts.evaluate --checkpoint checkpoints/reasoning_core
+
+# 4. Profile deployment tiers
+python -m leanformer.scripts.profile_deployment --checkpoint checkpoints/reasoning_core
+
+# 5. Forge domain knowledge into deltas
 python -m leanformer.scripts.forge_all_domains --facts-per-domain 200 --max-steps 200
 
-# 4. Start inference server
+# 6. Start inference server
 python -m leanformer.knowledge_plane.server \
   --model-checkpoint checkpoints/reasoning_core \
   --registry-path deltas/registry.json
