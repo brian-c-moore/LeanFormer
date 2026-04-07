@@ -452,5 +452,10 @@ def main():
     return 1 if failed > 0 else 0
 
 
+def test_governed_training_validation():
+    """Pytest entry point for governed training validation."""
+    assert main() == 0, "Governed training validation failed"
+
+
 if __name__ == "__main__":
     sys.exit(main())

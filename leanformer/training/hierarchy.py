@@ -33,7 +33,7 @@ class HierarchyConfig:
             self.lr_multipliers = {
                 0: 1.0,
                 1: 1.5,
-                2: 1.0,   # output_head has large gradients already, no boost needed
+                2: 1.0,   # L2 output projection receives high gradient magnitude
                 3: 2.0,
             }
 

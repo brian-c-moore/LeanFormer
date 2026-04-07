@@ -30,7 +30,7 @@ class Fact:
     """A single fact to be encoded as a belief delta."""
     prompt: str           # The input prompt
     target: str           # The target completion (e.g., " Paris")
-    target_token_id: int  # GPT-2 token ID for the target
+    target_token_id: int  # Token ID for the target
     description: str      # Human-readable description
     category: str         # Domain category
     domain_tags: List[str]

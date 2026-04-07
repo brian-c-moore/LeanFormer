@@ -36,7 +36,7 @@ The training pipeline applies per-group governance to all stages of the training
 - **Per-group convergence governors.** Four-state machine (ACTIVE → COOLING → CONVERGED → AWAKENED) per group. Converged groups stop consuming gradient compute.
 - **Coarse-to-fine hierarchy.** Only structural parameters (L0) active at step 0. Subsequent levels activate when prior levels converge.
 - **Federated budget allocation.** Gradient compute distributed proportional to learning need. Invariant: `sum(allocations) <= master_budget` at every step.
-- **Gradient routing.** Small MLP routes samples to relevant parameter groups. Non-selected groups have gradients zeroed post-backward.
+- **Gradient routing.** Small MLP scores sample relevance per parameter group. Supports selective gradient computation via top-k selection with straight-through estimator.
 - **Governed data pipeline.** Difficulty-tiered sampling, LSH deduplication, periodic re-scoring.
 - **Change-triggered evaluation.** Metrics evaluated only when dependent parameter groups change.
 - **Forge readiness gating.** Knowledge forge activates only when target groups have converged.
@@ -123,7 +123,6 @@ python -m leanformer.knowledge_plane.server \
 
 - [Architecture Reference](docs/ARCHITECTURE.md) — complete technical documentation
 - [Research Proposal](docs/LeanFormer_Proposal.md) — research proposal and methodology
-
 
 ## Author
 

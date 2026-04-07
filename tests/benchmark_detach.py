@@ -68,8 +68,7 @@ def main():
     print(f"Device: {device}")
     print(f"Steps per benchmark: {n_steps}\n")
 
-    # Use a model big enough to measure — default config is fine for CPU,
-    # use larger for CUDA
+    # Scale model to device capabilities
     if device == "cuda":
         config = LeanFormerConfig(
             vocab_size=32000, d_model=512, n_heads=8, n_layers=12, d_ff=2048,

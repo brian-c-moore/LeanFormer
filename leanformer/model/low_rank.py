@@ -44,9 +44,7 @@ class LowRankLinear(nn.Module):
         nn.init.zeros_(self.B)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # When both factors are frozen, detach so autograd skips this branch
-        # entirely during backward. This is what delivers wall-clock savings
-        # for converged parameter groups.
+        # Detach frozen factors so autograd skips this branch during backward
         A = self.A if self.A.requires_grad else self.A.detach()
         B = self.B if self.B.requires_grad else self.B.detach()
         out = x @ A @ B

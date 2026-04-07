@@ -73,7 +73,7 @@ class WikiTextDataset(Dataset):
             except Exception:
                 texts = None
 
-        # Fallback: synthetic data (still useful for measuring machinery)
+        # Fallback: synthetic data if WikiText-2 unavailable
         if not self.data:
             print("  [fallback] Using synthetic data (WikiText-2 unavailable)")
             for _ in range(max_samples):

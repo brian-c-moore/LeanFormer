@@ -1,9 +1,9 @@
 """
-Build data/facts.json — 100 facts across 5 categories with verified GPT-2 token IDs.
+Build data/facts.json — 100 facts across 5 categories with verified token IDs.
 
 Each fact has:
 - prompt: the text up to the answer
-- target: the target token (must be a single GPT-2 token)
+- target: the target token (must be a single token)
 - fact: the complete fact sentence used for belief encoding
 - category: geography, science, history, mathematics, language
 """

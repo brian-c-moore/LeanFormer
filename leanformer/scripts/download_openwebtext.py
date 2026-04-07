@@ -30,7 +30,7 @@ def main():
     # Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER)
     tokenizer.pad_token = tokenizer.eos_token
-    print(f"Tokenizer: GPT-2 (vocab size: {tokenizer.vocab_size})")
+    print(f"Tokenizer: {DEFAULT_TOKENIZER} (vocab size: {tokenizer.vocab_size})")
 
     # Download
     print(f"\nDownloading OpenWebText ({MAX_SAMPLES:,} samples)...")
