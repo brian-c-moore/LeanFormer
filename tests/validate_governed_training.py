@@ -44,16 +44,18 @@ from leanformer.training.eval_pipeline import EvalConfig, EvalPipeline
 
 
 def main():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     print("=== GOVERNED TRAINING END-TO-END VALIDATION ===")
+    print(f"Device: {device}")
     print("Validates every governance claim against the production code path.\n")
 
-    # Small model
+    # Small model — on GPU if available, matching production
     config = LeanFormerConfig(
         vocab_size=1000, d_model=128, n_heads=4, n_layers=4, d_ff=512,
         max_seq_len=64, attention_rank=16, ff_rank=16,
         screening_rank=4, attention_top_k=16, ff_gate_rank=4, dropout=0.0,
     )
-    model = LeanFormer(config)
+    model = LeanFormer(config).to(device)
     total_model_params = sum(p.numel() for p in model.parameters())
     print(f"Model: {total_model_params:,} params")
 
@@ -111,7 +113,7 @@ def main():
             max_active_groups=max(len(group_ids) // 2, 2),
             entropy_coeff=0.01, balance_window=50,
         ),
-    )
+    ).to(device)
 
     tmpdir = tempfile.mkdtemp()
     audit = AuditSink(os.path.join(tmpdir, "audit.jsonl"))
@@ -119,7 +121,7 @@ def main():
     def eval_fn():
         model.eval()
         with torch.no_grad():
-            x = torch.randint(0, config.vocab_size, (1, 32))
+            x = torch.randint(0, config.vocab_size, (1, 32), device=device)
             out = model(x, labels=x, training=False)
             model.train()
             return out["loss"].item()
@@ -159,6 +161,7 @@ def main():
 
     for epoch in range(10):  # Enough epochs to reach total_steps
         for ids, lbls in loader:
+            ids, lbls = ids.to(device), lbls.to(device)
             out = model(ids, labels=lbls, training=True)
             loss = out["loss"] / grad_accum
             loss.backward()
@@ -167,7 +170,7 @@ def main():
             masked_this_step = 0
             if not router.in_warmup and (batch_idx + 1) % grad_accum == 0:
                 with torch.no_grad():
-                    positions = torch.arange(ids.shape[1]).unsqueeze(0)
+                    positions = torch.arange(ids.shape[1], device=device).unsqueeze(0)
                     hidden = model.token_embedding(ids) + model.position_embedding(positions)
                 routing = router(hidden, group_ids)
                 # Count how many groups get masked BEFORE applying
