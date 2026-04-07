@@ -114,69 +114,69 @@ class FederatedBudget:
             )
 
     def _recompute_allocations(self):
-        """Recompute budget allocations based on learning-need scores."""
-        # Compute learning-need scores for active groups
+        """Recompute budget allocations based on learning-need scores.
+
+        State-aware allocation:
+          PENDING:   0.0 (not yet activated by hierarchy)
+          CONVERGED: floor (maintenance only, requires_grad=False)
+          COOLING:   0.5x of what learning-need would give (winding down)
+          ACTIVE:    full learning-need allocation
+          AWAKENED:  1.2x of what learning-need would give (recovery)
+        """
         needs: dict[str, float] = {}
-        active_ids = []
+        trainable_ids = []  # ACTIVE + COOLING + AWAKENED
+        reserved_cost = 0.0
 
         for gid in self.group_ids:
             if gid not in self.governors:
                 continue
             gov = self.governors[gid]
 
-            # Pending groups get zero allocation — not yet activated by hierarchy
             if gov.state == ConvergenceState.PENDING:
                 self.allocations[gid] = 0.0
                 continue
 
-            # Converged groups get maintenance allocation only
             if gov.state == ConvergenceState.CONVERGED:
                 self.allocations[gid] = self.config.floor_fraction * self.config.master_budget
+                reserved_cost += self.allocations[gid]
                 continue
 
-            active_ids.append(gid)
+            trainable_ids.append(gid)
 
             # Learning-need scoring
             grad_ema = gov.gradient_ema
             loss_contrib = self._loss_contribution_emas.get(gid, 0.0)
 
-            # Convergence progress: ratio of current to initial gradient EMA
             initial = self._initial_gradient_emas.get(gid)
             if initial and initial > 0:
                 convergence_progress = min(1.0, grad_ema / initial)
             else:
-                convergence_progress = 1.0  # No progress info yet
+                convergence_progress = 1.0
 
             need = (
                 self.config.alpha * grad_ema
                 + self.config.beta * loss_contrib
                 + self.config.gamma * (1.0 - convergence_progress)
             )
-            needs[gid] = max(need, 1e-10)  # Avoid zero
+            # Apply state multiplier to the need score
+            need *= gov.budget_multiplier
+            needs[gid] = max(need, 1e-10)
 
-        if not active_ids:
+        if not trainable_ids:
             return
 
-        # Budget available for active groups (total minus converged maintenance)
-        converged_cost = sum(
-            self.allocations[gid] for gid in self.group_ids
-            if gid in self.governors
-            and self.governors[gid].state == ConvergenceState.CONVERGED
-        )
-        available = self.config.master_budget - converged_cost
+        available = self.config.master_budget - reserved_cost
 
-        # Normalize needs to probability distribution
         total_need = sum(needs.values())
         if total_need <= 0:
-            # Uniform allocation among active groups
-            for gid in active_ids:
-                self.allocations[gid] = available / len(active_ids)
+            per_group = available / len(trainable_ids)
+            for gid in trainable_ids:
+                self.allocations[gid] = per_group
             return
 
-        # Allocate proportionally
-        for gid in active_ids:
+        # Allocate proportionally to state-weighted need
+        for gid in trainable_ids:
             raw = (needs[gid] / total_need) * available
-            # Enforce floor and ceiling
             floor = self.config.floor_fraction * self.config.master_budget
             ceiling = self.config.ceiling_fraction * self.config.master_budget
             self.allocations[gid] = max(floor, min(ceiling, raw))
