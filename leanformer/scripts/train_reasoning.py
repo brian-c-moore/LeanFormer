@@ -311,10 +311,9 @@ def main():
                     trainable = [p for p in model.parameters() if p.requires_grad]
                     if trainable:
                         optimizer = torch.optim.AdamW(trainable, lr=lr, weight_decay=weight_decay)
-                        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
-                        # Step scheduler to current position
-                        for _ in range(optimizer_step):
-                            scheduler.step()
+                        scheduler = torch.optim.lr_scheduler.LambdaLR(
+                            optimizer, lr_lambda, last_epoch=optimizer_step
+                        )
                     prev_active_levels = set(hierarchy.active_levels)
 
                 # Update budget
