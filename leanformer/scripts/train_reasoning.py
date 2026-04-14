@@ -429,10 +429,13 @@ def main():
 
                 # Save checkpoint
                 if optimizer_step % save_steps == 0:
+                    # Run eval to get real val_loss for checkpoint metadata
+                    step_val_loss = evaluate(model, val_loader, model_config)
+                    model.train()
                     save_checkpoint(
                         model, model_config,
                         output_dir / f"step-{optimizer_step}",
-                        optimizer_step, epoch_loss / epoch_steps,
+                        optimizer_step, step_val_loss,
                         optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                         epoch=epoch, global_step=global_step,
                         best_val_loss=best_val_loss, training_log=training_log,
@@ -481,7 +484,12 @@ def main():
             console.print(f"  [green]New best! Saved to {output_dir}[/green]")
         console.print()
 
-    # === Exit head tuning phase ===
+    # === Exit head tuning phase (on best checkpoint, not overfit final) ===
+    best_model_path = output_dir / "pytorch_model.bin"
+    if best_model_path.exists():
+        console.print(f"  Reloading best checkpoint for exit head tuning: {best_model_path}")
+        model.load_state_dict(torch.load(best_model_path, map_location="cuda", weights_only=True))
+
     console.print("[bold cyan]Starting exit head tuning...[/bold cyan]\n")
     tune_exit_heads(model, model_config, train_loader, output_dir, training_log)
 
@@ -495,11 +503,20 @@ def main():
     console.print(f"  Best val ppl:  {final_ppl:.1f}")
     console.print(f"  Checkpoint:    {output_dir}")
 
-    # Save final checkpoint (model weights only — training is done)
-    save_checkpoint(model, model_config, output_dir, optimizer_step, best_val_loss,
+    # Save final checkpoint to a separate path (do NOT overwrite best checkpoint)
+    save_checkpoint(model, model_config, output_dir / "final", optimizer_step, best_val_loss,
                     training_log=training_log)
+    console.print(f"  Final (end-of-training) checkpoint saved to {output_dir / 'final'}")
 
-    # Compute and save model hash
+    # Reload the best checkpoint for model hash + validation
+    best_model_path = output_dir / "pytorch_model.bin"
+    if best_model_path.exists():
+        console.print(f"\n  Reloading best checkpoint from {best_model_path}")
+        model.load_state_dict(torch.load(best_model_path, map_location="cuda", weights_only=True))
+    else:
+        console.print("  [yellow]WARNING: Best checkpoint not found, using end-of-training model[/yellow]")
+
+    # Compute and save model hash (of the best model)
     console.print("\nComputing model hash...")
     model_hash = compute_model_hash(model)
     hash_path = output_dir / "model_hash.txt"
@@ -508,7 +525,7 @@ def main():
     console.print(f"  Model hash: {model_hash[:16]}...")
     console.print(f"  Saved to: {hash_path}")
 
-    # === Post-training validation ===
+    # === Post-training validation (on best model, not overfit final) ===
     console.print("\n[bold cyan]Post-training validation...[/bold cyan]")
     post_training_validation(model, model_config, val_loader, output_dir)
 

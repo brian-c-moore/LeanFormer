@@ -1,5 +1,3 @@
-brian@leanformer-trainer:~$ cat LeanFormer/training.log 
-nohup: ignoring input
 LeanFormer Reasoning Core Training
   Parameters:  204,227,329
   Dense equiv: 804,913,152 (3.9x compression)
