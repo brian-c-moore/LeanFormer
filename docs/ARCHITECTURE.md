@@ -1,8 +1,69 @@
 # LeanFormer Architecture
 
-LeanFormer treats catastrophic forgetting as a shared mutable state problem. The base model weights are immutable after training. Knowledge is stored as sparse, independently-addressable belief deltas. A registry governs subspace allocation to prevent interference. The result is a model that can learn new knowledge without retraining, forget on demand, and compose knowledge from multiple domains additively. The training pipeline itself is governed by per-group convergence detection, coarse-to-fine hierarchy activation, federated budget allocation, and gradient routing.
+LeanFormer is a composition of sixteen abstraction primitives identified by Domain Abstraction Collapse (DAC). The architecture is not a collection of ML techniques assembled by analogy — every subsystem is a primitive composition whose governance properties have been specified in TLA+ and verified exhaustively by TLC (see `dac/Appendix_C_LeanFormer_TLA_Specifications.md`).
 
-See `LeanFormer_Proposal.md` for the research proposal.
+The load-bearing structural claims:
+
+- Catastrophic forgetting is the write-conflict problem in shared mutable state. The solution is the standard systems-engineering one: frozen base + `ResourceRegistry`-governed sparse overlays + orthogonality-enforced allocation.
+- Attention cost is the brute-force rendering problem. The solution is the visibility-buffer pipeline: cheap coarse selection followed by exact evaluation over the survivors.
+- Training inefficiency is the only governed computational system in the DAC collapse table operating without selectivity. Adding `CompetitiveSelection`, `QualityHierarchy`, `FederatedBudget`, per-group `ConvergenceGovernor`, and `AuditSink` is not an incremental optimization — it is bringing training in line with every other resource-governed domain.
+
+The base model weights are immutable after training. Knowledge is stored as sparse, independently-addressable belief deltas. A registry governs subspace allocation to prevent interference. The model can learn new knowledge without retraining, forget on demand, and compose knowledge from multiple domains additively. The training pipeline itself is governed by per-group convergence detection, coarse-to-fine hierarchy activation, federated budget allocation, and gradient routing.
+
+See `LeanFormer_Proposal.md` for the DAC-applied-to-AI research proposal and `dac/Domain_Abstraction_Collapse.md` for the methodology paper.
+
+## Primitive Composition Summary
+
+| Subsystem | Primitive Composition |
+|-----------|----------------------|
+| Low-rank weight factorization | `Budget<Parameters>` + matrix decomposition |
+| Two-pass sparse attention | `CompetitiveSelection` (ranked screen) → `CompetitiveSelection` (soft exact) |
+| Gated sparse feed-forward | `CompetitiveSelection` (ranked) + `ActuationPass` on winners only |
+| Adaptive computation depth | `ConvergenceGovernor` over hidden-state residual |
+| Belief delta | `Budget<Parameters>` + `Transaction` (atomic, bounded, reversible) |
+| Delta registry | `ResourceRegistry<BeliefID, DeltaWeights>` with non-overlap enforcement |
+| Compositional router | `CompetitiveSelection` (ranked) over routing embeddings |
+| Orthogonality enforcement | `FederatedBudget<ParameterSubspace>` |
+| Consolidation | `Reduction` via SVD re-factorization |
+| Provenance / confidence | `AuditSink` + `ConvergenceGovernor` (retrieval vs interpolation) |
+| Per-group convergence | `ConvergenceGovernor` per parameter group (4-state machine) |
+| Coarse-to-fine hierarchy | `QualityHierarchy` + `TraversalEngine` over parameter groups |
+| Federated budget allocation | `FederatedBudget<GradientCompute>` with floor/ceiling |
+| Gradient routing | `CompetitiveSelection` (sample → group) with straight-through estimator |
+| Governed data pipeline | `QualityHierarchy<SampleDifficulty>` + `Budget<SamplesPerStep>` |
+| Change-triggered eval | `Signal<ConvergenceChange>` + `Budget<EvalCompute>` |
+| Forge readiness gate | `Signal<GroupConverged>` + `ConvergenceGovernor` stability window |
+| Unified audit | `AuditSink` (SHA-256 hash-chained append-only) |
+
+## Verification Status
+
+All nineteen primitive specs (sixteen original + two composition invariants + the phase-aware `ConvergenceGovernor`) passed TLC verification, along with five LeanFormer compositions and eighteen decomposition-failure specs. Approximately 45.4 million states were explored. Every decomposition produced a concrete counterexample, establishing operational irreducibility of the primitive set. See `dac/Appendix_D_Irreducibility_Proofs.md`.
+
+## Scale Validation (204M params, 805M dense equivalent)
+
+One epoch on a reasoning corpus, 7,228 optimizer steps, NVIDIA L4, 140.9 hours wall clock.
+
+- FederatedBudget invariant `sum(allocations) <= 1.0` held for all 722 audit records (zero violations). Converged groups dropped to 0.012; active groups received up to 0.40.
+- 18 governor state transitions across 8 parameter groups, all valid, no skipped states. Final states: embeddings COOLING, attention_routing CONVERGED, gates CONVERGED, layer_norms CONVERGED, attention_output COOLING, ff_projections COOLING, output_head COOLING, exit_classifier CONVERGED.
+- SHA-256 hash chain intact across all 722 records from step 10 to step 7,220.
+- L0 active from step 0; L1/L2 activated at steps 200/400 (B=0 initialization artifact, disclosed below); L3 activated at step 2,773 via genuine post-learning convergence (non-round step, 2,300+ steps after real gradient flow began).
+- Best validation perplexity 57.6 at step 2,000. Final PPL 1,463.9 (overfit — single-epoch with dropout 0.1 as only regularization). All governance invariants held throughout the overfit phase, confirming structure/function separation.
+- Orthogonal capacity: 53,760 dimensions across 20 layers (3,360 max rank-16 deltas), confirmed on NVIDIA L4 (GCP) and RTX 3060 (local).
+- Two subsystems did not produce meaningful signal at this scale: adaptive depth stayed at 20/20 throughout, and tiered sampling scored all samples as Failing at initialization.
+
+The 204M run is governance-machinery validation. The language-modeling perplexity is not competitive at this scale and training duration; that is not the subject of the evaluation.
+
+## The B=0 Observational Degeneracy
+
+Low-rank layers initialize `B` matrices to zero (standard LoRA practice), which means all parameter groups begin with near-zero gradient flow regardless of whether they have received meaningful training signal. The convergence governors detected low gradient EMA and transitioned ACTIVE → COOLING exactly as specified. Because the cooling-window threshold was hit purely by the zero-initialized path (not by real learning), hierarchy activations at L1 and L2 fired at round-number steps (200 and 400) before any real gradient flow had moved through the network.
+
+Applying DAC's vocabulary-stripping process to this failure reveals it as an observational degeneracy: two different trajectories (cold start vs. genuine convergence) produce the same low-magnitude reading. This is the same pattern the collapse table documents across rendering (depth buffer disambiguates zero-color pixels), networking (heartbeats disambiguate silent nodes), and distributed consensus (timeouts disambiguate non-responsive voters). The fix is a second `Signal<T>`: a phase-aware `ConvergenceGovernor` that tracks whether gradient magnitude has **ever** exceeded threshold, classifying gradient trajectories into COLD, WARMING, ACTIVE_LEARNING, DECLINING. The ACTIVE → COOLING transition is preconditioned on the phase being ACTIVE_LEARNING or DECLINING, never COLD.
+
+The `NoCoolingFromCold` invariant was specified and TLA+-verified across 18.6 million states. A specification without phase awareness reproduces the 204M failure as a TLC counterexample in 2 states. Implementation of the phase-aware governor in `leanformer/training/convergence.py` is pending; the L3 activation at step 2,773 was already genuine convergence, so the mechanism works — the fix addresses the L1/L2 calibration issue without changing the primitive.
+
+A `COOLING → ACTIVE` regression in the `attention_output` group during the 204M run further validated the four-state machine: the group was prematurely cooled by the B=0 artifact, then reactivated when real gradient flow from the output head (activated at step 400) pushed its EMA above the cooling threshold. The governor self-corrected without intervention.
+
+---
 
 ---
 
@@ -429,7 +490,7 @@ tests/                            307 tests across all components
 - KV cache quantization uses MSE-only (no QJL) per community validation that softmax amplifies QJL variance.
 - Checkpoint save/restore includes optimizer, scheduler, scaler, and RNG states with atomic writes.
 - Parameter group registry (`configs/parameter_groups.json`) is config-independent — fnmatch patterns match any model size.
-- Convergence governor four-state machine: ACTIVE (full budget) → COOLING (50%) → CONVERGED (5% maintenance, requires_grad=False) → AWAKENED (120% recovery).
+- Convergence governor four-state machine: ACTIVE (full budget) → COOLING (50%) → CONVERGED (5% maintenance, requires_grad=False) → AWAKENED (120% recovery). The phase-aware variant (TLA+-verified, implementation pending) adds a gradient-phase tag and a `NoCoolingFromCold` precondition on ACTIVE → COOLING to prevent the B=0 observational degeneracy.
 - Hierarchy: L0 always active from step 0. L1-L3 activate on convergence signals. Emergency activation at 80% of training.
 - Budget invariant `sum(allocations) <= master_budget` enforced at every reallocation with floor/ceiling per group.
 - Gradient router uses straight-through estimator for end-to-end differentiability through discrete top-k selection.

@@ -1,0 +1,350 @@
+brian@leanformer-trainer:~$ cat LeanFormer/training.log 
+nohup: ignoring input
+LeanFormer Reasoning Core Training
+  Parameters:  204,227,329
+  Dense equiv: 804,913,152 (3.9x compression)
+  Device:      NVIDIA L4
+
+Loading tokenized reasoning corpus...
+  Train: 462,650 samples
+  Val:   24,350 samples
+  Batch: 1 x 64 accum = 64 effective
+  LR: 0.0002, warmup: 1000
+  Epochs: 1 (7,228 optimizer steps, 462,650 micro-steps)
+
+Scoring sample difficulty for tiered sampling...
+  Tiers: Mastered=0, Learning=0, Struggling=0, Failing=5000, Excluded=0
+
+Governed Training Pipeline
+  Parameter groups: 8
+  Hierarchy levels: [0, 1, 2, 3]
+  Active at start:  L0 (84,793,344 params)
+  Audit log:        checkpoints/reasoning_core/audit.jsonl
+Starting training...
+
+  step    100/7228 | epoch 1 | loss 10.3888 (lm 10.3750 + aux 0.0138) | lr 
+2.00e-05 | 475 tok/s | vram 16.1GB | gate 0.6861 | exit 20/20 | gov A4/C0/V0 | 
+hier L0 | params 42%
+  HIERARCHY step 200: activated L1 (active: [0, 1])
+/home/brian/venv/lib/python3.11/site-packages/torch/optim/lr_scheduler.py:216: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn(
+  step    200/7228 | epoch 1 | loss 10.3887 (lm 10.3750 + aux 0.0137) | lr 
+4.00e-05 | 474 tok/s | vram 16.1GB | gate 0.6624 | exit 20/20 | gov A2/C4/V0 | 
+hier L0,L1 | params 97%
+  step    300/7228 | epoch 1 | loss 10.3886 (lm 10.3750 + aux 0.0136) | lr 
+6.00e-05 | 473 tok/s | vram 17.8GB | gate 0.6690 | exit 20/20 | gov A2/C4/V0 | 
+hier L0,L1 | params 97%
+  HIERARCHY step 400: activated L2 (active: [0, 1, 2])
+  step    400/7228 | epoch 1 | loss 10.3886 (lm 10.3750 + aux 0.0136) | lr 
+8.00e-05 | 472 tok/s | vram 17.8GB | gate 0.6600 | exit 20/20 | gov A1/C6/V0 | 
+hier L0,L1,L2 | params 100%
+  step    500/7228 | epoch 1 | loss 9.7146 (lm 9.7010 + aux 0.0136) | lr 
+1.00e-04 | 472 tok/s | vram 17.9GB | gate 0.5391 | exit 20/20 | gov A1/C6/V0 | 
+hier L0,L1,L2 | params 100%
+  EVAL step 500: val_loss=5.7755, val_ppl=322.3
+  New best! Saved to checkpoints/reasoning_core
+  step    600/7228 | epoch 1 | loss 8.9943 (lm 8.9806 + aux 0.0137) | lr 
+1.20e-04 | 471 tok/s | vram 17.9GB | gate 0.5575 | exit 20/20 | gov A1/C6/V0 | 
+hier L0,L1,L2 | params 100%
+  step    700/7228 | epoch 1 | loss 8.4202 (lm 8.4063 + aux 0.0139) | lr 
+1.40e-04 | 470 tok/s | vram 17.9GB | gate 0.5968 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  step    800/7228 | epoch 1 | loss 7.9414 (lm 7.9274 + aux 0.0140) | lr 
+1.60e-04 | 470 tok/s | vram 17.9GB | gate 0.3618 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  step    900/7228 | epoch 1 | loss 7.5420 (lm 7.5280 + aux 0.0141) | lr 
+1.80e-04 | 470 tok/s | vram 17.9GB | gate 0.5852 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1000/7228 | epoch 1 | loss 7.2008 (lm 7.1867 + aux 0.0140) | lr 
+2.00e-04 | 470 tok/s | vram 17.9GB | gate 0.3796 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  EVAL step 1000: val_loss=4.6894, val_ppl=108.8
+  New best! Saved to checkpoints/reasoning_core
+  step   1100/7228 | epoch 1 | loss 6.9037 (lm 6.8897 + aux 0.0140) | lr 
+2.00e-04 | 470 tok/s | vram 17.9GB | gate 0.5932 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1200/7228 | epoch 1 | loss 6.6458 (lm 6.6318 + aux 0.0139) | lr 
+1.99e-04 | 470 tok/s | vram 17.9GB | gate 0.4021 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1300/7228 | epoch 1 | loss 6.4153 (lm 6.4015 + aux 0.0138) | lr 
+1.99e-04 | 470 tok/s | vram 17.9GB | gate 0.5898 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1400/7228 | epoch 1 | loss 6.2036 (lm 6.1899 + aux 0.0138) | lr 
+1.98e-04 | 470 tok/s | vram 17.9GB | gate 0.5979 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1500/7228 | epoch 1 | loss 6.0098 (lm 5.9960 + aux 0.0137) | lr 
+1.97e-04 | 470 tok/s | vram 17.9GB | gate 0.4601 | exit 20/20 | gov A1/C3/V3 | 
+hier L0,L1,L2 | params 100%
+  EVAL step 1500: val_loss=4.5353, val_ppl=93.3
+  New best! Saved to checkpoints/reasoning_core
+  step   1600/7228 | epoch 1 | loss 5.8242 (lm 5.8106 + aux 0.0137) | lr 
+1.95e-04 | 469 tok/s | vram 17.9GB | gate 0.5892 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1700/7228 | epoch 1 | loss 5.6341 (lm 5.6205 + aux 0.0136) | lr 
+1.94e-04 | 469 tok/s | vram 17.9GB | gate 0.5867 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1800/7228 | epoch 1 | loss 5.4458 (lm 5.4322 + aux 0.0135) | lr 
+1.92e-04 | 469 tok/s | vram 17.9GB | gate 0.5845 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   1900/7228 | epoch 1 | loss 5.2668 (lm 5.2533 + aux 0.0135) | lr 
+1.90e-04 | 469 tok/s | vram 17.9GB | gate 0.5805 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   2000/7228 | epoch 1 | loss 5.0946 (lm 5.0811 + aux 0.0134) | lr 
+1.88e-04 | 469 tok/s | vram 17.9GB | gate 0.5560 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  EVAL step 2000: val_loss=4.0533, val_ppl=57.6
+  New best! Saved to checkpoints/reasoning_core
+  step   2100/7228 | epoch 1 | loss 4.9374 (lm 4.9240 + aux 0.0134) | lr 
+1.85e-04 | 469 tok/s | vram 17.9GB | gate 0.5600 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   2200/7228 | epoch 1 | loss 4.7871 (lm 4.7737 + aux 0.0134) | lr 
+1.82e-04 | 469 tok/s | vram 17.9GB | gate 0.5648 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   2300/7228 | epoch 1 | loss 4.6435 (lm 4.6302 + aux 0.0133) | lr 
+1.79e-04 | 469 tok/s | vram 17.9GB | gate 0.4915 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   2400/7228 | epoch 1 | loss 4.5065 (lm 4.4932 + aux 0.0133) | lr 
+1.76e-04 | 469 tok/s | vram 17.9GB | gate 0.4165 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   2500/7228 | epoch 1 | loss 4.3748 (lm 4.3616 + aux 0.0132) | lr 
+1.73e-04 | 469 tok/s | vram 17.9GB | gate 0.5461 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  EVAL step 2500: val_loss=4.2217, val_ppl=68.2
+  step   2600/7228 | epoch 1 | loss 4.2487 (lm 4.2355 + aux 0.0132) | lr 
+1.69e-04 | 469 tok/s | vram 17.9GB | gate 0.4908 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  step   2700/7228 | epoch 1 | loss 4.1280 (lm 4.1148 + aux 0.0131) | lr 
+1.65e-04 | 469 tok/s | vram 17.9GB | gate 0.5377 | exit 20/20 | gov A2/C2/V3 | 
+hier L0,L1,L2 | params 100%
+  HIERARCHY step 2773: activated L3 (active: [0, 1, 2, 3])
+  step   2800/7228 | epoch 1 | loss 4.0105 (lm 3.9975 + aux 0.0131) | lr 
+1.62e-04 | 469 tok/s | vram 17.9GB | gate 0.4861 | exit 20/20 | gov A2/C3/V3 | 
+hier L0,L1,L2,L3 | params 100%
+  step   2900/7228 | epoch 1 | loss 3.8914 (lm 3.8786 + aux 0.0128) | lr 
+1.57e-04 | 469 tok/s | vram 17.9GB | gate 0.3899 | exit 20/20 | gov A2/C3/V3 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3000/7228 | epoch 1 | loss 3.7756 (lm 3.7630 + aux 0.0126) | lr 
+1.53e-04 | 469 tok/s | vram 17.9GB | gate 0.5247 | exit 20/20 | gov A1/C4/V3 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 3000: val_loss=5.3093, val_ppl=202.2
+  step   3100/7228 | epoch 1 | loss 3.6713 (lm 3.6590 + aux 0.0123) | lr 
+1.49e-04 | 469 tok/s | vram 17.9GB | gate 0.5194 | exit 20/20 | gov A1/C4/V3 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3200/7228 | epoch 1 | loss 3.5716 (lm 3.5595 + aux 0.0121) | lr 
+1.44e-04 | 469 tok/s | vram 17.9GB | gate 0.5117 | exit 20/20 | gov A1/C4/V3 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3300/7228 | epoch 1 | loss 3.4760 (lm 3.4642 + aux 0.0119) | lr 
+1.40e-04 | 469 tok/s | vram 17.9GB | gate 0.5067 | exit 20/20 | gov A1/C4/V3 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3400/7228 | epoch 1 | loss 3.3848 (lm 3.3731 + aux 0.0117) | lr 
+1.35e-04 | 469 tok/s | vram 17.9GB | gate 0.4989 | exit 20/20 | gov A1/C4/V3 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3500/7228 | epoch 1 | loss 3.2965 (lm 3.2850 + aux 0.0115) | lr 
+1.30e-04 | 469 tok/s | vram 17.9GB | gate 0.4884 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 3500: val_loss=5.6697, val_ppl=290.0
+  step   3600/7228 | epoch 1 | loss 3.2133 (lm 3.2021 + aux 0.0113) | lr 
+1.26e-04 | 469 tok/s | vram 17.9GB | gate 0.4951 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3700/7228 | epoch 1 | loss 3.1336 (lm 3.1225 + aux 0.0111) | lr 
+1.21e-04 | 469 tok/s | vram 17.9GB | gate 0.4944 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3800/7228 | epoch 1 | loss 3.0574 (lm 3.0464 + aux 0.0109) | lr 
+1.16e-04 | 469 tok/s | vram 17.9GB | gate 0.3937 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   3900/7228 | epoch 1 | loss 2.9845 (lm 2.9737 + aux 0.0107) | lr 
+1.11e-04 | 469 tok/s | vram 17.9GB | gate 0.3922 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4000/7228 | epoch 1 | loss 2.9146 (lm 2.9041 + aux 0.0106) | lr 
+1.06e-04 | 469 tok/s | vram 17.9GB | gate 0.4705 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 4000: val_loss=6.0782, val_ppl=436.2
+  step   4100/7228 | epoch 1 | loss 2.8477 (lm 2.8373 + aux 0.0104) | lr 
+1.01e-04 | 469 tok/s | vram 17.9GB | gate 0.3854 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4200/7228 | epoch 1 | loss 2.7836 (lm 2.7733 + aux 0.0103) | lr 
+9.57e-05 | 469 tok/s | vram 17.9GB | gate 0.4791 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4300/7228 | epoch 1 | loss 2.7221 (lm 2.7119 + aux 0.0102) | lr 
+9.06e-05 | 469 tok/s | vram 17.9GB | gate 0.3929 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4400/7228 | epoch 1 | loss 2.6631 (lm 2.6531 + aux 0.0100) | lr 
+8.56e-05 | 469 tok/s | vram 17.9GB | gate 0.4330 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4500/7228 | epoch 1 | loss 2.6064 (lm 2.5965 + aux 0.0099) | lr 
+8.07e-05 | 469 tok/s | vram 17.9GB | gate 0.4758 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 4500: val_loss=6.3576, val_ppl=576.9
+  step   4600/7228 | epoch 1 | loss 2.5520 (lm 2.5422 + aux 0.0098) | lr 
+7.57e-05 | 469 tok/s | vram 17.9GB | gate 0.4374 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4700/7228 | epoch 1 | loss 2.4997 (lm 2.4901 + aux 0.0097) | lr 
+7.09e-05 | 468 tok/s | vram 17.9GB | gate 0.3870 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4800/7228 | epoch 1 | loss 2.4494 (lm 2.4398 + aux 0.0096) | lr 
+6.61e-05 | 468 tok/s | vram 17.9GB | gate 0.4717 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   4900/7228 | epoch 1 | loss 2.4009 (lm 2.3915 + aux 0.0095) | lr 
+6.14e-05 | 468 tok/s | vram 17.9GB | gate 0.3817 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5000/7228 | epoch 1 | loss 2.3543 (lm 2.3449 + aux 0.0094) | lr 
+5.68e-05 | 468 tok/s | vram 17.9GB | gate 0.4690 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 5000: val_loss=6.7336, val_ppl=840.2
+  step   5100/7228 | epoch 1 | loss 2.3093 (lm 2.3000 + aux 0.0093) | lr 
+5.23e-05 | 468 tok/s | vram 17.9GB | gate 0.3616 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5200/7228 | epoch 1 | loss 2.2659 (lm 2.2567 + aux 0.0092) | lr 
+4.79e-05 | 468 tok/s | vram 17.9GB | gate 0.4711 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5300/7228 | epoch 1 | loss 2.2241 (lm 2.2150 + aux 0.0091) | lr 
+4.37e-05 | 467 tok/s | vram 17.9GB | gate 0.3506 | exit 20/20 | gov A1/C3/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5400/7228 | epoch 1 | loss 2.1833 (lm 2.1743 + aux 0.0090) | lr 
+3.96e-05 | 467 tok/s | vram 17.9GB | gate 0.4633 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5500/7228 | epoch 1 | loss 2.1437 (lm 2.1348 + aux 0.0089) | lr 
+3.56e-05 | 467 tok/s | vram 17.9GB | gate 0.3359 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 5500: val_loss=7.2319, val_ppl=1382.9
+  step   5600/7228 | epoch 1 | loss 2.1061 (lm 2.0973 + aux 0.0088) | lr 
+3.19e-05 | 467 tok/s | vram 17.9GB | gate 0.4668 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5700/7228 | epoch 1 | loss 2.0698 (lm 2.0611 + aux 0.0087) | lr 
+2.83e-05 | 467 tok/s | vram 17.9GB | gate 0.3506 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5800/7228 | epoch 1 | loss 2.0347 (lm 2.0261 + aux 0.0087) | lr 
+2.48e-05 | 467 tok/s | vram 17.9GB | gate 0.4667 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   5900/7228 | epoch 1 | loss 2.0008 (lm 1.9922 + aux 0.0086) | lr 
+2.16e-05 | 467 tok/s | vram 17.9GB | gate 0.4677 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6000/7228 | epoch 1 | loss 1.9680 (lm 1.9595 + aux 0.0085) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4652 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 6000: val_loss=7.1318, val_ppl=1251.1
+  step   6100/7228 | epoch 1 | loss 1.9362 (lm 1.9278 + aux 0.0085) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.3731 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6200/7228 | epoch 1 | loss 1.9055 (lm 1.8971 + aux 0.0084) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4729 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6300/7228 | epoch 1 | loss 1.8757 (lm 1.8674 + aux 0.0083) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4721 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6400/7228 | epoch 1 | loss 1.8468 (lm 1.8386 + aux 0.0083) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4753 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6500/7228 | epoch 1 | loss 1.8188 (lm 1.8106 + aux 0.0082) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.3981 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 6500: val_loss=7.2170, val_ppl=1362.4
+  step   6600/7228 | epoch 1 | loss 1.7917 (lm 1.7835 + aux 0.0081) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.3491 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6700/7228 | epoch 1 | loss 1.7653 (lm 1.7572 + aux 0.0081) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4652 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6800/7228 | epoch 1 | loss 1.7397 (lm 1.7317 + aux 0.0080) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.3628 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   6900/7228 | epoch 1 | loss 1.7149 (lm 1.7069 + aux 0.0080) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4685 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   7000/7228 | epoch 1 | loss 1.6907 (lm 1.6828 + aux 0.0079) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4715 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  EVAL step 7000: val_loss=7.2101, val_ppl=1353.1
+  step   7100/7228 | epoch 1 | loss 1.6673 (lm 1.6594 + aux 0.0079) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4702 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+  step   7200/7228 | epoch 1 | loss 1.6445 (lm 1.6366 + aux 0.0078) | lr 
+2.00e-05 | 467 tok/s | vram 17.9GB | gate 0.4142 | exit 20/20 | gov A0/C4/V4 | 
+hier L0,L1,L2,L3 | params 100%
+
+Epoch 1/1 | train_loss: 1.6380 | val_loss: 7.2889 | val_ppl: 1463.9 | time: 
+140.9h | gov: {'COOLING': 4, 'CONVERGED': 4} | hier: [0, 1, 2, 3] | audit: 722 
+records
+
+Starting exit head tuning...
+
+  Exit head params: 590,593
+  exit_tune step 100/1000 | aux_loss 0.0038 | exit_layer 20/20
+  exit_tune step 200/1000 | aux_loss 0.0036 | exit_layer 20/20
+  exit_tune step 300/1000 | aux_loss 0.0051 | exit_layer 20/20
+  exit_tune step 400/1000 | aux_loss 0.0047 | exit_layer 20/20
+  exit_tune step 500/1000 | aux_loss 0.0046 | exit_layer 20/20
+  exit_tune step 600/1000 | aux_loss 0.0047 | exit_layer 20/20
+  exit_tune step 700/1000 | aux_loss 0.0035 | exit_layer 20/20
+  exit_tune step 800/1000 | aux_loss 0.0047 | exit_layer 20/20
+  exit_tune step 900/1000 | aux_loss 0.0047 | exit_layer 20/20
+  exit_tune step 1000/1000 | aux_loss 0.0061 | exit_layer 20/20
+  Exit-tuned checkpoint saved to checkpoints/reasoning_core/exit_tuned.pt
+
+Training complete!
+  Total time:  140.9h
+  Best val loss: 4.0533
+  Best val ppl:  57.6
+  Checkpoint:    checkpoints/reasoning_core
+
+Computing model hash...
+  Model hash: 1878b5155810e367...
+  Saved to: checkpoints/reasoning_core/model_hash.txt
+
+Post-training validation...
+  Validation perplexity: 1463.9
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  def fibonacci(n):
+  def fibonacci(n):n
+
+):
+
+
+):
+
+
+
+
+       n):
+       
+ {{
+       ter
+
+       
+       ter
+
+g
+
+
+Not {{ {{ {{
+
+
+g):
+        super        super
+):
+        {{        {{ {{Not {{ Annie {{ {{ {{ {{ {{ {{ {{g An
+
+  The derivative of x squared is
+  The derivative of x squared is boundaries defines boundaries is defines maxim 
+is is Eu grows defines is Cell grows defines provides eliminate squally 
+thickness defines allows of defines defines may re
+
+  If all mammals are warm-blooded, and
+  If all mammals are warm-blooded, and Terry, static years, emerging 
+organizations,, master, connections, connections, connections education for 
+freeze, connections connections education education, conn
+
+  The experiment demonstrated that
+  The experiment demonstrated that experiment mechanics mechanics mechanics 
+transitions mechanics mechanics quantum this quantum mechanics this quantum 
+quantum mechanics variationQQ variation this exper
+
+  To solve this problem, first
+  To solve this problem, first head last item head way way way possible head way
+possible way way way way possible way possible way b b b possible b b b way b b 
+b b b way b form b b way b way b b way wa
+
+  Total available dims: 53760
+  Theoretical max deltas (rank 16): 3360
+
+  Validation results saved to checkpoints/reasoning_core/validation_results.json

@@ -1,0 +1,221 @@
+{
+  "checkpoint": "step-2000 (best val_loss=4.0533, PPL=57.6)",
+  "validation_timestamp": "2026-04-13T11:03:58",
+  "val_loss": 13.332225255966186,
+  "val_perplexity": 616753.8371680607,
+  "generations": [
+    {
+      "prompt": "def fibonacci(n):",
+      "generation": "def fibonacci(n):nu % h que que v => la b que que que conjet Ali queado que que \u00e9 dist que po pod que queooes deet de po t que \u00e9 la e alet que\u00e1 ent ben que queius que que que que que que que ve que que que\u0103 es que po que que que ve von von que que que la queoo que nie que\u0103 que que consum\u093f von von que que del que mum het von que ja que po que que dist pod que"
+    },
+    {
+      "prompt": "The derivative of x squared is",
+      "generation": "The derivative of x squared is equal is respectively .ions x var x diagram gradient gradient gradient gradient gradient gradient gradient gradient scale , _ gradient noise , gradient gradient spectral _ gradient gradient simulations _ _ _ gradient gradient gradient anom gradient gradient gradient rotation entropy gradient _ _ _ _ _ spectral gradient rotation factor _ transform analysis distribution of gradient _ applications , we _ our _ _ simulations _ _ increment gradient gradient _ _ _ pixel _ _ _ _ _ _ _ _ _ _ _ , _ _ _ _ _ _ _ _ _ _ _ _"
+    },
+    {
+      "prompt": "If all mammals are warm-blooded, and",
+      "generation": "If all mammals are warm-blooded, and electronic books humansals, genals creation creationant art human humansomiovophoid que genius Native genomopsisDefinition virus flour vaccine combiitive vaccine human vaccine veful genella functional adapticioviciov combant vaccine disease comb veer processerophom vaccine vaccineerness disease humans vaccine vaccine poual prevalates biologicalia vaccine vaccine flourella vaccine vaccineerment genet vaccine Spec vaccineer, biological genella vaccine vaccine vaccine pract genella bacterella causaci\u00f3n applulture activ"
+    },
+    {
+      "prompt": "The experiment demonstrated that",
+      "generation": "The experiment demonstrated that solve introdu cups cups thanks..umm cups your performance that nov container noise cups how this console this this calculate buying http! Unless simpl definition httplib google definition httpX\u89e3\u200b lemon var Code Load Edit THIS File\u89e3 maybe pip yesterday\u89e3 OUT\u200b httpX OUT } how how if you let } httpreak } OUTVE Feder OR Code OR edit\");\r *** eq Module WARRANTIES OR consoleSearch function Product OUT Module OR console how you Module Windows so messages {\\bit console. Note negative value. Take 0"
+    },
+    {
+      "prompt": "To solve this problem, first",
+      "generation": "To solve this problem, first ve this this httpsing!\u2588 CodeContents\n Module editing No! Code Module CodeContents,Template More FileSink OUT_XMappingMappingJs CodeContents!! PDF File OUTXAsyncTypeBasicToView PDF OUTReactNull PDF Product Ax CodeBlock CodeReact argumentsTypeMapping messages; Type Product CameraComponent ORded OUTXInfo CodeType Product Camera Value SignName Product Product Product UINameXSearch DocumentType copiesTypeMappingParam Camera!'; OR File($ fantmetic messages = p${CONFIG"
+    }
+  ],
+  "orthogonal_capacity": {
+    "per_layer": [
+      {
+        "layer": 0,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 1,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 2,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 3,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 4,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 5,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 6,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 7,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 8,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 9,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 10,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 11,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 12,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 13,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 14,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 15,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 16,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 17,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 18,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 19,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      }
+    ],
+    "d_model": 1536,
+    "delta_rank": 16,
+    "total_available_dims": 53760,
+    "total_theoretical_max_deltas": 3360
+  },
+  "notes": [
+    "This validation was run against the BEST checkpoint (step 2000), not the overfit final checkpoint.",
+    "The original post_training_validation in train_reasoning.py had a bug that evaluated the wrong model.",
+    "Val loss/PPL here should be close to 4.05/57.6 (the inline EVAL result at step 2000)."
+  ]
+}

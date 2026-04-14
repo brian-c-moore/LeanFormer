@@ -1,0 +1,8 @@
+{
+  "optimizer_step": 7228,
+  "global_step": 0,
+  "epoch": 0,
+  "val_loss": 4.053257869333029,
+  "val_ppl": 57.58475539165666,
+  "best_val_loss": 4.053257869333029
+}

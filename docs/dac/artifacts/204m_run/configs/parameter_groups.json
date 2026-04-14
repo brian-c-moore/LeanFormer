@@ -1,0 +1,133 @@
+{
+  "version": "1.0",
+  "description": "Parameter Group Registry — maps every LeanFormer parameter tensor to a named group with hierarchy level assignment. Tensor patterns use fnmatch-style globs. The registry is config-independent: patterns match any number of layers.",
+  "design_notes": {
+    "embedding_dominance": "In LeanFormer, token+position embeddings are ~73% of total parameters (default config). This makes L0 much larger than the plan's 5-10% estimate, which assumed a denser architecture. The hierarchy percentages in the plan are aspirational for non-embedding parameters. Embeddings MUST be L0 because the model produces zero gradient signal without them. Empirical convergence data will validate whether embeddings converge early (expected) and can be frozen, reclaiming the compute budget for L1+.",
+    "convergence_order_hypothesis": "L0 (embeddings + routing + gates + norms) converges first because these establish the basic representational substrate and information routing patterns. L1 (value projections + FF projections) converges second because it refines WHAT information flows through the routes L0 established. L2 (output head) converges third because it maps refined representations to vocabulary. L3 (exit classifier) converges last because it's the most task-specific component. Convergence governors will validate or revise this."
+  },
+  "groups": [
+    {
+      "group_id": "embeddings",
+      "hierarchy_level": 0,
+      "description": "Token and position embeddings — the input representation substrate. Must be active from step 0.",
+      "tensor_patterns": [
+        "token_embedding.weight",
+        "position_embedding.weight"
+      ],
+      "expected_convergence_order": "early",
+      "dependent_metrics": ["perplexity", "base_weight_integrity"]
+    },
+    {
+      "group_id": "attention_routing",
+      "hierarchy_level": 0,
+      "description": "Q/K projections and screening projections — determine WHERE attention flows (attention patterns and sparse candidate selection).",
+      "tensor_patterns": [
+        "layers.*.attn.q_proj.A",
+        "layers.*.attn.q_proj.B",
+        "layers.*.attn.q_proj.bias",
+        "layers.*.attn.k_proj.A",
+        "layers.*.attn.k_proj.B",
+        "layers.*.attn.k_proj.bias",
+        "layers.*.attn.q_screen.A",
+        "layers.*.attn.q_screen.B",
+        "layers.*.attn.q_screen.bias",
+        "layers.*.attn.k_screen.A",
+        "layers.*.attn.k_screen.B",
+        "layers.*.attn.k_screen.bias"
+      ],
+      "expected_convergence_order": "early",
+      "dependent_metrics": ["attention_sparsity", "semantic_routing", "perplexity", "base_weight_integrity"]
+    },
+    {
+      "group_id": "gates",
+      "hierarchy_level": 0,
+      "description": "Feed-forward activation gate predictors — determine WHICH neurons fire at inference time.",
+      "tensor_patterns": [
+        "layers.*.ff.activation_gate.A",
+        "layers.*.ff.activation_gate.B"
+      ],
+      "expected_convergence_order": "early",
+      "dependent_metrics": ["attention_sparsity", "perplexity", "base_weight_integrity"]
+    },
+    {
+      "group_id": "layer_norms",
+      "hierarchy_level": 0,
+      "description": "All layer normalization parameters (pre-norm per layer + final norm). Structural stabilizers.",
+      "tensor_patterns": [
+        "layers.*.norm1.weight",
+        "layers.*.norm1.bias",
+        "layers.*.norm2.weight",
+        "layers.*.norm2.bias",
+        "norm.weight",
+        "norm.bias"
+      ],
+      "expected_convergence_order": "early",
+      "dependent_metrics": ["perplexity", "adaptive_depth", "base_weight_integrity"]
+    },
+    {
+      "group_id": "attention_output",
+      "hierarchy_level": 1,
+      "description": "V/O projections — determine WHAT information is aggregated and projected out of attention. Depends on stable attention routing (L0).",
+      "tensor_patterns": [
+        "layers.*.attn.v_proj.A",
+        "layers.*.attn.v_proj.B",
+        "layers.*.attn.v_proj.bias",
+        "layers.*.attn.out_proj.A",
+        "layers.*.attn.out_proj.B",
+        "layers.*.attn.out_proj.bias"
+      ],
+      "expected_convergence_order": "mid",
+      "dependent_metrics": ["belief_injection", "perplexity", "base_weight_integrity"]
+    },
+    {
+      "group_id": "ff_projections",
+      "hierarchy_level": 1,
+      "description": "Feed-forward up/gate/down projections (SwiGLU). Core information transformation. Depends on stable routing and normalization (L0).",
+      "tensor_patterns": [
+        "layers.*.ff.up_proj.A",
+        "layers.*.ff.up_proj.B",
+        "layers.*.ff.up_proj.bias",
+        "layers.*.ff.gate_proj.A",
+        "layers.*.ff.gate_proj.B",
+        "layers.*.ff.gate_proj.bias",
+        "layers.*.ff.down_proj.A",
+        "layers.*.ff.down_proj.B",
+        "layers.*.ff.down_proj.bias"
+      ],
+      "expected_convergence_order": "mid",
+      "dependent_metrics": ["belief_injection", "perplexity", "base_weight_integrity"]
+    },
+    {
+      "group_id": "output_head",
+      "hierarchy_level": 2,
+      "description": "Language model head (low-rank output projection to vocabulary). Depends on stable internal representations (L1).",
+      "tensor_patterns": [
+        "lm_head.A",
+        "lm_head.B"
+      ],
+      "expected_convergence_order": "late",
+      "dependent_metrics": ["perplexity", "base_weight_integrity"]
+    },
+    {
+      "group_id": "exit_classifier",
+      "hierarchy_level": 3,
+      "description": "Depth controller exit head — predicts early exit. Most task-specific; depends on all other levels being stable.",
+      "tensor_patterns": [
+        "depth_controller.exit_head.0.weight",
+        "depth_controller.exit_head.0.bias",
+        "depth_controller.exit_head.2.weight",
+        "depth_controller.exit_head.2.bias"
+      ],
+      "expected_convergence_order": "last",
+      "dependent_metrics": ["adaptive_depth", "perplexity", "base_weight_integrity"]
+    }
+  ],
+  "metric_dependency_map": {
+    "perplexity": ["all"],
+    "belief_injection": ["attention_routing", "attention_output", "ff_projections"],
+    "semantic_routing": ["attention_routing"],
+    "attention_sparsity": ["attention_routing", "gates"],
+    "base_weight_integrity": ["all"],
+    "adaptive_depth": ["exit_classifier", "layer_norms"]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "vocab_size": 32000,
+  "d_model": 1536,
+  "n_heads": 24,
+  "n_layers": 20,
+  "d_ff": 6144,
+  "max_seq_len": 512,
+  "attention_rank": 192,
+  "ff_rank": 192,
+  "screening_rank": 48,
+  "attention_top_k": 96,
+  "ff_gate_rank": 48,
+  "ff_sparsity_target": 0.8,
+  "min_depth": 6,
+  "exit_threshold": 0.03,
+  "dropout": 0.1,
+  "delta_rank": 4,
+  "max_active_deltas": 4,
+  "delta_encoding_steps": 30,
+  "delta_encoding_lr": 0.01
+}

@@ -1,0 +1,214 @@
+{
+  "val_loss": 7.288887484669686,
+  "val_perplexity": 1463.941133960805,
+  "generations": [
+    {
+      "prompt": "def fibonacci(n):",
+      "generation": "def fibonacci(n):n\n\n):\n\n\n):\n\n\n\n\n       n):\n       \n {{\n       ter\n\n       \n       ter\n\ng\n\n\nNot {{ {{ {{\n\n\ng):\n        super        super\n):\n        {{        {{ {{Not {{ Annie {{ {{ {{ {{ {{ {{ {{g Annie {{ {{ {{ {{ {{ {{ AbdNot Frg Catherine de Catherine {{ Catherine): Put\nNot!\n\n\n\n\n       View\n\n\nView"
+    },
+    {
+      "prompt": "The derivative of x squared is",
+      "generation": "The derivative of x squared is boundaries defines boundaries is defines maxim is is Eu grows defines is Cell grows defines provides eliminate squally thickness defines allows of defines defines may refers may of of of defines of behaviors defines of defines defines defines of defines of behaviors defines defines may defines may defines defines defines defines may defines defines defines defines materials defines defines defines defines defines defines defines defines defines defines materials defines defines may provides defines defines of techniques of defines mayFoundation defines or definition defines of defines of languages concept preferences algorithms Person concept concept preferences algorithms related languages such"
+    },
+    {
+      "prompt": "If all mammals are warm-blooded, and",
+      "generation": "If all mammals are warm-blooded, and Terry, static years, emerging organizations,, master, connections, connections, connections education for freeze, connections connections education education, connections, education, and education organizations, education, education education, emerging activ activities connections, education areas connections, development education sciences, development, education education education techbootstrap activities education, connections, education activities, education, education, education activities, activities education management management activities activ activities attended organizations, science museum genarp museum pract information Parp surveyual genate university voc survey College"
+    },
+    {
+      "prompt": "The experiment demonstrated that",
+      "generation": "The experiment demonstrated that experiment mechanics mechanics mechanics transitions mechanics mechanics quantum this quantum mechanics this quantum quantum mechanics variationQQ variation this experiment expressions expressions this const quantum const mechanics quantum quantum this can consider consider quantum robust q solving consider consider quantum allows consider quantum our quantum quantum quantum solving consider solving consider consider quantum quantum quantumcite quantumcite quantum quantum quantum solving approach consider consider quantum can consider quantum this robust expressions quantum solving solving consider solving variation q consider quantum q explicit consider quantum robust quantum solving consider quantum quantum quantum quantum quantum quantum quantum quantum quantum quantum"
+    },
+    {
+      "prompt": "To solve this problem, first",
+      "generation": "To solve this problem, first head last item head way way way possible head way possible way way way way possible way possible way b b b possible b b b way b b b b b way b form b b way b way b b way way b b way b way b way b el form b way form way solution way b way form b b way form ad solution way form form form solution way way b b way b way b form form possible way form way form because ad pain pain pain fr pain ad disput consum to"
+    }
+  ],
+  "orthogonal_capacity": {
+    "per_layer": [
+      {
+        "layer": 0,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 1,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 2,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 3,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 4,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 5,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 6,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 7,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 8,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 9,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 10,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 11,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 12,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 13,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 14,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 15,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 16,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 17,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 18,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      },
+      {
+        "layer": 19,
+        "attention_significant_svs": 192,
+        "ff_significant_svs": 192,
+        "available_dims_attention": 1344,
+        "available_dims_ff": 1344,
+        "theoretical_max_deltas_attention": 84,
+        "theoretical_max_deltas_ff": 84
+      }
+    ],
+    "d_model": 1536,
+    "delta_rank": 16,
+    "total_available_dims": 53760,
+    "total_theoretical_max_deltas": 3360
+  }
+}
