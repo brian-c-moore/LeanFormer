@@ -28,6 +28,7 @@ from leanformer.training.convergence import (
     ConvergenceState,
     ConvergenceSignal,
     GovernorManager,
+    GradientPhase,
 )
 from leanformer.training.hierarchy import HierarchyConfig, HierarchyManager
 from leanformer.training.budget import BudgetConfig, FederatedBudget
@@ -200,27 +201,82 @@ class TestParameterGroupRegistry:
 # Per-Group Convergence Governors
 # ---------------------------------------------------------------------------
 
+def _warm(gov: ConvergenceGovernor, value: float = 1.0, steps: int = 1):
+    """Simulate a learning phase so the governor's peak_observed flag flips.
+
+    The phase-aware governor (NoCoolingFromCold invariant) requires that
+    gradient magnitude has genuinely risen above the cooling threshold
+    before ACTIVE -> COOLING can fire. In real training this happens
+    naturally; in unit tests we inject it explicitly.
+    """
+    for _ in range(steps):
+        gov.update(value)
+
+
 class TestConvergenceGovernor:
     """Tests for the per-group convergence state machine."""
 
     def test_initial_state_is_active(self):
         gov = ConvergenceGovernor("test_group")
         assert gov.state == ConvergenceState.ACTIVE
+        assert gov.peak_observed is False
+        assert gov.gradient_phase == GradientPhase.COLD
 
     def test_active_to_cooling_transition(self):
-        """ACTIVE → COOLING when gradient EMA stays below cooling_threshold."""
+        """ACTIVE → COOLING when gradient EMA stays below cooling_threshold
+        AFTER the governor has observed genuine learning signal."""
         config = ConvergenceConfig(
             cooling_threshold=0.1,
             cooling_window=5,
             ema_decay=0.0,  # No smoothing — use raw values
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)  # peak_observed = True
+        assert gov.peak_observed is True
 
         # Feed low gradient norms for cooling_window steps
         for _ in range(5):
             gov.update(0.05)
 
         assert gov.state == ConvergenceState.COOLING
+        assert gov.gradient_phase == GradientPhase.DECLINING
+
+    def test_cold_start_does_not_trigger_cooling(self):
+        """The NoCoolingFromCold invariant. Reproduces the 204M B=0 bug:
+        gradients near zero from B=0 initialization MUST NOT be mistaken
+        for post-learning convergence."""
+        config = ConvergenceConfig(
+            cooling_threshold=0.1,
+            cooling_window=5,
+            ema_decay=0.0,
+        )
+        gov = ConvergenceGovernor("test_group", config)
+
+        # Feed cold-start gradients (B=0: grad_norm effectively 0) for many
+        # windows. The governor must remain ACTIVE and the phase COLD.
+        for _ in range(50):
+            gov.update(0.0)
+
+        assert gov.state == ConvergenceState.ACTIVE
+        assert gov.peak_observed is False
+        assert gov.gradient_phase == GradientPhase.COLD
+
+        # Real learning arrives. Now cooling becomes possible, but only
+        # after a subsequent quiet window.
+        _warm(gov, value=0.5)
+        assert gov.peak_observed is True
+        # First threshold-crossing step registers as WARMING; peak_observed
+        # is derived from the pre-step flag, which was still False before
+        # this update fired.
+        assert gov.gradient_phase == GradientPhase.WARMING
+
+        _warm(gov, value=0.5)
+        assert gov.gradient_phase == GradientPhase.ACTIVE_LEARNING
+
+        for _ in range(5):
+            gov.update(0.05)
+        assert gov.state == ConvergenceState.COOLING
+        assert gov.gradient_phase == GradientPhase.DECLINING
 
     def test_cooling_resets_on_high_gradient(self):
         """ACTIVE stays ACTIVE if gradient EMA bounces above threshold."""
@@ -230,6 +286,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         # Almost at threshold, then spike
         for _ in range(4):
@@ -257,6 +314,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         # ACTIVE → COOLING
         for _ in range(3):
@@ -276,6 +334,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         # ACTIVE → COOLING
         for _ in range(3):
@@ -297,6 +356,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         # Drive to CONVERGED
         for _ in range(2):
@@ -321,6 +381,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         # Drive to CONVERGED → AWAKENED
         for _ in range(2):
@@ -350,6 +411,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         states_seen = [ConvergenceState.ACTIVE]
 
@@ -382,6 +444,26 @@ class TestConvergenceGovernor:
             ConvergenceState.CONVERGED, ConvergenceState.AWAKENED,
         }
 
+    def test_gradient_phase_classification(self):
+        """The four phases are entered in the correct order under a realistic
+        trajectory: COLD -> WARMING -> ACTIVE_LEARNING -> DECLINING."""
+        config = ConvergenceConfig(cooling_threshold=0.1, ema_decay=0.0)
+        gov = ConvergenceGovernor("test_group", config)
+
+        gov.update(0.01)  # below threshold, never crossed
+        assert gov.gradient_phase == GradientPhase.COLD
+        assert gov.peak_observed is False
+
+        gov.update(0.5)   # crosses threshold for the first time
+        assert gov.gradient_phase == GradientPhase.WARMING
+        assert gov.peak_observed is True
+
+        gov.update(0.5)   # still above threshold, peak already observed
+        assert gov.gradient_phase == GradientPhase.ACTIVE_LEARNING
+
+        gov.update(0.01)  # drops below, but peak was observed
+        assert gov.gradient_phase == GradientPhase.DECLINING
+
     def test_signal_emission(self):
         """Signals fire on every state transition with correct payload."""
         config = ConvergenceConfig(
@@ -390,6 +472,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         signals: list[ConvergenceSignal] = []
         gov.subscribe(signals.append)
@@ -402,6 +485,8 @@ class TestConvergenceGovernor:
         assert signals[0].old_state == ConvergenceState.ACTIVE
         assert signals[0].new_state == ConvergenceState.COOLING
         assert signals[0].gradient_ema == pytest.approx(0.05, abs=0.01)
+        assert signals[0].peak_observed is True
+        assert signals[0].gradient_phase == GradientPhase.DECLINING
 
     def test_ema_smoothing(self):
         """EMA properly smooths gradient norms."""
@@ -432,6 +517,7 @@ class TestConvergenceGovernor:
             ema_decay=0.0,
         )
         gov = ConvergenceGovernor("test_group", config)
+        _warm(gov, value=0.5)
 
         assert gov.budget_multiplier == 1.0  # ACTIVE
 
@@ -448,16 +534,18 @@ class TestConvergenceGovernor:
         assert gov.budget_multiplier == 1.2
 
     def test_state_dict_roundtrip(self):
-        """Governor state survives save/restore."""
+        """Governor state survives save/restore, including phase-aware fields."""
         config = ConvergenceConfig(
             cooling_threshold=0.1,
             cooling_window=2,
             ema_decay=0.0,
         )
         gov1 = ConvergenceGovernor("test_group", config)
+        _warm(gov1, value=0.5)
         for _ in range(2):
             gov1.update(0.05)
         assert gov1.state == ConvergenceState.COOLING
+        assert gov1.peak_observed is True
 
         state = gov1.state_dict()
         gov2 = ConvergenceGovernor("test_group", config)
@@ -466,6 +554,39 @@ class TestConvergenceGovernor:
         assert gov2.state == ConvergenceState.COOLING
         assert gov2.gradient_ema == pytest.approx(gov1.gradient_ema)
         assert gov2.step == gov1.step
+        assert gov2.peak_observed is True
+        assert gov2.gradient_phase == gov1.gradient_phase
+
+    def test_legacy_checkpoint_load(self):
+        """Pre-phase-aware checkpoints (no peak_observed field) load with
+        peak_observed inferred from state: True for any state past ACTIVE,
+        False for ACTIVE/PENDING."""
+        config = ConvergenceConfig(cooling_threshold=0.1, ema_decay=0.0)
+
+        # Simulate an old checkpoint in COOLING: must infer peak_observed=True.
+        legacy_cooling = {
+            "state": "COOLING",
+            "step": 100,
+            "gradient_ema": 0.05,
+            "loss_contribution": 0.0,
+            "ema_initialized": True,
+            "cooling_counter": 0,
+            "converged_counter": 0,
+            "awakened_counter": 0,
+        }
+        gov = ConvergenceGovernor("test_group", config)
+        gov.load_state_dict(legacy_cooling)
+        assert gov.state == ConvergenceState.COOLING
+        assert gov.peak_observed is True
+        assert gov.gradient_phase == GradientPhase.DECLINING
+
+        # Simulate an old checkpoint in ACTIVE: peak_observed=False (safe default).
+        legacy_active = {**legacy_cooling, "state": "ACTIVE"}
+        gov2 = ConvergenceGovernor("test_group", config)
+        gov2.load_state_dict(legacy_active)
+        assert gov2.state == ConvergenceState.ACTIVE
+        assert gov2.peak_observed is False
+        assert gov2.gradient_phase == GradientPhase.COLD
 
 
 class TestGovernorManager:
@@ -523,6 +644,11 @@ class TestGovernorManager:
         )
         manager = GovernorManager(groups, config)
 
+        # Simulate prior learning so phase-aware governors will permit cooling.
+        # In real training this flips naturally the first time gradients land.
+        for gov in manager.governors.values():
+            gov.peak_observed = True
+
         signals: list[ConvergenceSignal] = []
         manager.subscribe(signals.append)
 
@@ -562,6 +688,8 @@ class TestGovernorManager:
             ema_decay=0.0,
         )
         manager = GovernorManager(groups, config)
+        for gov in manager.governors.values():
+            gov.peak_observed = True  # simulate prior learning
 
         # Step 1: ACTIVE → COOLING (all groups have 0 grad since no backward)
         manager.step()
@@ -586,6 +714,8 @@ class TestGovernorManager:
             ema_decay=0.0,
         )
         manager = GovernorManager(groups, config)
+        for gov in manager.governors.values():
+            gov.peak_observed = True
 
         # Drive to CONVERGED
         manager.step()
@@ -686,6 +816,12 @@ class TestConvergenceTrainingIntegration:
             confirmation_window=100,
         )
         governors = {gid: ConvergenceGovernor(gid, config) for gid in groups}
+        # Simulate prior learning — in a real long training run, gradients
+        # cross the cooling threshold at some point before the quiet tail.
+        # The phase-aware governor demands this; the test's cooling_threshold
+        # of 100.0 would never be reached by realistic gradients.
+        for gov in governors.values():
+            gov.peak_observed = True
         optimizer = torch.optim.AdamW(small_model.parameters(), lr=1e-3)
 
         for step in range(10):
@@ -722,6 +858,8 @@ class TestConvergenceTrainingIntegration:
             confirmation_window=100,
         )
         governors = {gid: ConvergenceGovernor(gid, config) for gid in groups}
+        for gov in governors.values():
+            gov.peak_observed = True  # simulate prior learning
         optimizer = torch.optim.AdamW(small_model.parameters(), lr=1e-3)
 
         transitions: list[ConvergenceSignal] = []
@@ -759,11 +897,19 @@ class TestConvergenceTrainingIntegration:
 class TestHierarchyManager:
     """Tests for coarse-to-fine hierarchy activation."""
 
-    def _make_hierarchy(self, small_model, registry, **governor_kwargs):
-        """Helper: build groups, governors, and hierarchy manager."""
+    def _make_hierarchy(self, small_model, registry, warm=True, **governor_kwargs):
+        """Helper: build groups, governors, and hierarchy manager.
+
+        By default, pre-warms every governor so peak_observed=True — the
+        realistic case where hierarchy activation fires after real training
+        has begun. Set warm=False to exercise cold-start behavior explicitly.
+        """
         groups = build_param_groups(small_model, registry)
         gov_config = ConvergenceConfig(**governor_kwargs) if governor_kwargs else ConvergenceConfig()
         governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+        if warm:
+            for gov in governors.values():
+                gov.peak_observed = True
         return groups, governors
 
     def test_only_l0_active_at_start(self, small_model, registry):
@@ -909,6 +1055,10 @@ class TestHierarchyManager:
             confirmation_window=1000,
         )
         governors = {gid: ConvergenceGovernor(gid, gov_config) for gid in groups}
+        # Pre-warm governors (simulate prior learning); the test uses a
+        # threshold of 100 that realistic gradients never cross.
+        for gov in governors.values():
+            gov.peak_observed = True
         hierarchy = HierarchyManager(groups, governors, total_steps=100)
 
         # Only optimize L0 params initially
@@ -1845,6 +1995,11 @@ class TestForgeReadinessGate:
             "attention_output": ConvergenceGovernor("attention_output", gov_config),
             "ff_projections": ConvergenceGovernor("ff_projections", gov_config),
         }
+        # Pre-warm (simulate prior learning); the gate tests use a threshold
+        # of 100 that real gradients never cross, so without this the
+        # phase-aware governors stay ACTIVE forever.
+        for gov in governors.values():
+            gov.peak_observed = True
         target_groups = {
             "science": ["attention_output", "ff_projections"],
         }
@@ -2085,6 +2240,11 @@ class TestFullIntegration:
             )
             for gid in groups
         }
+        # Pre-warm (simulate prior learning). The test uses
+        # cooling_threshold=50 that realistic gradients never cross; under
+        # phase-awareness, without this the invariant keeps everything ACTIVE.
+        for gov in governors.values():
+            gov.peak_observed = True
 
         # Hierarchy
         hierarchy = HierarchyManager(

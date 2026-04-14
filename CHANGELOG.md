@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1 — Phase-Aware ConvergenceGovernor + CI Hardening
+
+- **Phase-aware `ConvergenceGovernor` implemented.** `leanformer/training/convergence.py` now tracks a monotonic `peak_observed` flag and classifies each step into `COLD` / `WARMING` / `ACTIVE_LEARNING` / `DECLINING`. The ACTIVE → COOLING transition is preconditioned on `peak_observed` being True (the `NoCoolingFromCold` invariant from the TLA+ spec, verified across 18.6M states). Unit tests cover the invariant (`test_cold_start_does_not_trigger_cooling`), phase classification ordering, state-dict roundtrip, and backwards-compatible loading of pre-phase-aware checkpoints. 310 tests passing (+3 new).
+- **Not yet real-world validated.** The fix is unit-tested and formally verified but has not been exercised by a retrain of the 204M configuration; real-world evidence remains future work. Published 204M artifacts (audit log, governor states, L3 activation at step 2,773) were produced by the pre-phase-aware code and remain valid as governance-machinery evidence — the B=0 artifact at L1/L2 is openly disclosed in the paper.
+- **Audit log enriched.** `GovernorManager` step and transition records now include per-group `gradient_phase` and `peak_observed`, so the next training run's audit will make the phase trajectory directly inspectable.
+- **Dependabot for GitHub Actions.** `.github/dependabot.yml` added. Weekly auto-PRs keep action SHA pins and tag comments in sync with upstream releases, preventing the pins from rotting silently.
+
 ## 0.4.0 — Scale Validation + Formal Verification
 
 - **204M-parameter scale validation (805M dense equivalent).** Full governed pipeline trained on reasoning corpus for 7,228 optimizer steps (one epoch) on NVIDIA L4. Zero budget violations across 722 hash-chained audit records. 18 valid governor state transitions with no skipped states. L3 activation at step 2,773 via genuine post-learning convergence. Best validation perplexity 57.6 at step 2,000. Orthogonal capacity confirmed at 53,760 dimensions (3,360 rank-16 delta slots) on two independent machines.

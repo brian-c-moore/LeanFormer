@@ -1,0 +1,16 @@
+# Dependabot keeps GitHub Actions SHA pins from rotting silently.
+# When an action publishes a new release, Dependabot opens a PR that
+# updates both the SHA and the trailing tag comment. Review the diff
+# against the upstream changelog before merging.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "ci"
+      - "dependencies"

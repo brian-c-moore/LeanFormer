@@ -7,6 +7,15 @@ PENDING → ACTIVE → COOLING → CONVERGED → AWAKENED → ACTIVE
 Groups start in PENDING until the hierarchy activates their level.
 Each parameter group gets its own governor that tracks gradient EMA,
 loss contribution, and transitions through convergence states.
+
+The governor is phase-aware: it classifies the gradient trajectory into
+COLD / WARMING / ACTIVE_LEARNING / DECLINING and enforces the
+`NoCoolingFromCold` invariant — the ACTIVE → COOLING transition requires
+that gradient magnitude has actually risen above the cooling threshold at
+some point. This prevents cold-start gradients (B=0 initialization) from
+being misread as post-learning convergence. The invariant was formally
+specified in TLA+ and verified by TLC across 18.6 million states; see
+`local/tla/ConvergenceGovernorPhaseAware.tla` for the specification.
 """
 
 import enum
@@ -25,6 +34,24 @@ class ConvergenceState(enum.Enum):
     COOLING = "COOLING"
     CONVERGED = "CONVERGED"
     AWAKENED = "AWAKENED"
+
+
+class GradientPhase(enum.Enum):
+    """Qualitative classification of the gradient trajectory.
+
+    Two trajectories can produce the same low gradient magnitude but have
+    very different meanings:
+
+      COLD:      0 -> 0 -> 0 -> 0          (B=0, learning not started)
+      DECLINING: HIGH -> MED -> LOW -> LOW  (genuine convergence)
+
+    The governor must distinguish these. It does so by tracking whether
+    the gradient has ever exceeded the cooling threshold (`peak_observed`).
+    """
+    COLD = "COLD"                       # never exceeded threshold, currently low
+    WARMING = "WARMING"                 # never exceeded threshold, currently high
+    ACTIVE_LEARNING = "ACTIVE_LEARNING" # has exceeded threshold, currently high
+    DECLINING = "DECLINING"             # has exceeded threshold, currently low
 
 
 @dataclass
@@ -60,6 +87,8 @@ class ConvergenceSignal:
     step: int
     gradient_ema: float
     loss_contribution: float
+    gradient_phase: GradientPhase = GradientPhase.COLD
+    peak_observed: bool = False
     timestamp: str = field(default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%S"))
 
 
@@ -86,6 +115,11 @@ class ConvergenceGovernor:
         # Gradient EMA tracking
         self.gradient_ema: float = 1.0  # Start high so we don't trigger immediately
         self._ema_initialized: bool = False
+
+        # Phase-aware liveness signal: has the gradient ever genuinely risen
+        # above the cooling threshold? ACTIVE -> COOLING is gated on this.
+        self.peak_observed: bool = False
+        self.gradient_phase: GradientPhase = GradientPhase.COLD
 
         # Loss contribution tracking
         self.loss_contribution: float = 0.0
@@ -126,7 +160,23 @@ class ConvergenceGovernor:
             self.gradient_ema = 1.0  # Start high to avoid immediate COOLING
             self._ema_initialized = False
             self._cooling_counter = 0
+            # peak_observed intentionally NOT reset: if a group has previously
+            # been learning and returns to ACTIVE (via AWAKENED), its history
+            # persists. On true PENDING->ACTIVE from step 0, peak_observed is
+            # already False.
             self._emit_signal(old_state, self.state)
+
+    def _classify_phase(self, grad_norm: float) -> GradientPhase:
+        """Classify the gradient trajectory.
+
+        Uses the raw per-step grad_norm (not the EMA) for phase detection
+        so a single genuine learning spike flips `peak_observed` without
+        being smoothed out by the EMA.
+        """
+        above = grad_norm >= self.config.cooling_threshold
+        if self.peak_observed:
+            return GradientPhase.ACTIVE_LEARNING if above else GradientPhase.DECLINING
+        return GradientPhase.WARMING if above else GradientPhase.COLD
 
     def update(self, grad_norm: float, loss_contribution: float | None = None) -> ConvergenceState:
         """Update governor with current step's gradient norm.
@@ -153,6 +203,16 @@ class ConvergenceGovernor:
             alpha = self.config.ema_decay
             self.gradient_ema = alpha * self.gradient_ema + (1 - alpha) * grad_norm
 
+        # Phase classification. peak_observed is a monotonic liveness signal:
+        # once True, it stays True for the life of the governor. Uses raw
+        # grad_norm so a genuine learning spike trips the flag immediately.
+        # Classify using the pre-update peak_observed so the first
+        # threshold-crossing step is WARMING; subsequent above-threshold steps
+        # are ACTIVE_LEARNING. This matches the TLA+ specification.
+        self.gradient_phase = self._classify_phase(grad_norm)
+        if grad_norm >= self.config.cooling_threshold:
+            self.peak_observed = True
+
         # Update loss contribution when provided
         if loss_contribution is not None:
             self.loss_contribution = loss_contribution
@@ -175,7 +235,18 @@ class ConvergenceGovernor:
         return self.state
 
     def _update_active(self):
-        """ACTIVE → COOLING if gradient EMA below cooling_threshold for cooling_window."""
+        """ACTIVE → COOLING if gradient EMA below cooling_threshold for cooling_window,
+        AND gradient has actually risen above threshold at some point.
+
+        The peak_observed precondition is the NoCoolingFromCold invariant: a
+        governor that has never seen real gradient flow cannot interpret its
+        quiet state as post-learning convergence.
+        """
+        if not self.peak_observed:
+            # Cold-start: learning has not started. Don't accumulate.
+            self._cooling_counter = 0
+            return
+
         if self.gradient_ema < self.config.cooling_threshold:
             self._cooling_counter += 1
             if self._cooling_counter >= self.config.cooling_window:
@@ -226,6 +297,8 @@ class ConvergenceGovernor:
             step=self.step,
             gradient_ema=self.gradient_ema,
             loss_contribution=self.loss_contribution,
+            gradient_phase=self.gradient_phase,
+            peak_observed=self.peak_observed,
         )
 
         self.transition_history.append({
@@ -235,6 +308,8 @@ class ConvergenceGovernor:
             "step": self.step,
             "gradient_ema": self.gradient_ema,
             "loss_contribution": self.loss_contribution,
+            "gradient_phase": self.gradient_phase.value,
+            "peak_observed": self.peak_observed,
             "timestamp": signal.timestamp,
         })
 
@@ -253,10 +328,19 @@ class ConvergenceGovernor:
             "cooling_counter": self._cooling_counter,
             "converged_counter": self._converged_counter,
             "awakened_counter": self._awakened_counter,
+            "peak_observed": self.peak_observed,
+            "gradient_phase": self.gradient_phase.value,
         }
 
     def load_state_dict(self, state: dict):
-        """Restore governor state from checkpoint."""
+        """Restore governor state from checkpoint.
+
+        Backwards compatible with pre-phase-aware checkpoints: missing
+        `peak_observed` defaults to True for governors that are already past
+        ACTIVE (since they can only have reached those states under the old
+        rules after seeing gradient flow at least once), and False for
+        governors still in ACTIVE or PENDING.
+        """
         self.state = ConvergenceState(state["state"])
         self.step = state["step"]
         self.gradient_ema = state["gradient_ema"]
@@ -265,6 +349,19 @@ class ConvergenceGovernor:
         self._cooling_counter = state["cooling_counter"]
         self._converged_counter = state["converged_counter"]
         self._awakened_counter = state["awakened_counter"]
+
+        if "peak_observed" in state:
+            self.peak_observed = state["peak_observed"]
+            self.gradient_phase = GradientPhase(state["gradient_phase"])
+        else:
+            # Legacy checkpoint: infer peak_observed from state.
+            self.peak_observed = self.state not in (
+                ConvergenceState.PENDING, ConvergenceState.ACTIVE,
+            )
+            # Phase will re-classify on next update().
+            self.gradient_phase = (
+                GradientPhase.DECLINING if self.peak_observed else GradientPhase.COLD
+            )
 
 
 class GovernorManager:
@@ -360,12 +457,14 @@ class GovernorManager:
                     "step": signal.step,
                     "gradient_ema": signal.gradient_ema,
                     "loss_contribution": signal.loss_contribution,
+                    "gradient_phase": signal.gradient_phase.value,
+                    "peak_observed": signal.peak_observed,
                     "timestamp": signal.timestamp,
                 }
                 f.write(json.dumps(record) + "\n")
 
     def _log_step(self, step: int, states: dict[str, ConvergenceState]):
-        """Log per-step gradient EMAs and states."""
+        """Log per-step gradient EMAs, states, and phase-awareness signals."""
         with open(self._log_path, "a") as f:
             record = {
                 "type": "step_metrics",
@@ -374,6 +473,12 @@ class GovernorManager:
                     gid: gov.gradient_ema for gid, gov in self.governors.items()
                 },
                 "states": {gid: s.value for gid, s in states.items()},
+                "gradient_phases": {
+                    gid: gov.gradient_phase.value for gid, gov in self.governors.items()
+                },
+                "peak_observed": {
+                    gid: gov.peak_observed for gid, gov in self.governors.items()
+                },
             }
             f.write(json.dumps(record) + "\n")
 

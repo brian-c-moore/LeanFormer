@@ -148,7 +148,7 @@ python -m leanformer.knowledge_plane.server \
 - Single-epoch 204M training produced severe overfitting after step 2,000. Multi-epoch runs with stronger regularization are the first-priority next step.
 - Adaptive depth remained at 20/20 layers throughout the 204M run; the exit classifiers need either a lower threshold or explicit layer-dropping training to learn graduated depth.
 - Tiered sampling scored all samples at initialization when the model could not yet evaluate difficulty; periodic re-scoring is required to activate the governed data pipeline.
-- The phase-aware `ConvergenceGovernor` is specified and TLA+-verified but not yet implemented in the training code. A retrain with the fix applied is the cleanest demonstration of convergence-gated coarse-to-fine training.
+- The phase-aware `ConvergenceGovernor` is now implemented in `leanformer/training/convergence.py` (the `NoCoolingFromCold` invariant gates ACTIVE → COOLING on `peak_observed`, with 113 unit tests covering the invariant, gradient phase classification, and legacy-checkpoint compatibility). It has **not** been validated against a real training run yet. A retrain of the 204M configuration with this code in place is the cleanest demonstration of clean convergence-gated coarse-to-fine training; until then the real-world evidence for the fix remains the TLA+ proof (18.6M states) and the B=0 bug's reproducibility as a TLC counterexample, not empirical training data.
 - Efficiency claims (50-70% gradient-compute reduction) require a 7B+ scale run with real backward-pass skipping to validate wall-clock gains.
 
 See Section 9.5 of the DAC paper for the full future-work list with resource estimates.
