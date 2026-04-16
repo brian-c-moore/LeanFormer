@@ -9,21 +9,21 @@ Independent Systems Researcher
 
 ## Abstract
 
-The vocabulary used to describe a problem constrains the solutions that can be found. Domain-specific language creates the false impression that domain-specific solutions are required, hiding the fact that structurally identical problems have already been solved in other domains under different names. This paper identifies and formalizes a design methodology called Domain Abstraction Collapse (DAC): the systematic process of stripping domain-specific language from computational patterns, identifying structural isomorphisms across domain boundaries, and reducing domain-specific abstractions to a minimal generating set of domain-agnostic abstraction primitives from which all domain patterns can be reconstructed through composition.
+The vocabulary used to describe a problem constrains the solutions that can be found. Domain-specific language creates the impression that domain-specific solutions are required, concealing the fact that structurally identical problems have already been solved in other domains under different names. This paper formalizes Domain Abstraction Collapse (DAC): a methodology for stripping domain-specific language from computational patterns, identifying structural isomorphisms across domain boundaries, and reducing domain-specific abstractions to a minimal generating set of domain-agnostic abstraction primitives from which domain patterns can be reconstructed through composition.
 
-We demonstrate this methodology through analysis of twelve distinct engineering domains: real-time rendering, physics simulation, audio spatialization, network replication, container orchestration, CI/CD pipelines, ETL workflows, configuration management, SOAR automation, distributed consensus, economic simulation, and machine learning. Abstraction collapse across all twelve domains produced a set of sixteen orthogonal abstraction primitives sufficient to express every computational pattern observed. Each domain is shown to be a composition of these primitives instantiated with domain-specific data schemas and domain-specific functions.
+The methodology is applied across twelve resource-governed engineering domains (real-time rendering, physics simulation, audio spatialization, network replication, container orchestration, CI/CD pipelines, ETL workflows, configuration management, SOAR automation, distributed consensus, economic simulation, and machine learning) and against eight adversarial domains outside the original sample (unification, Hindley-Milner type inference, term rewriting, constraint logic programming, probabilistic programming, resolution-style theorem proving, symbolic differentiation, and lattice-theoretic dataflow analysis). The adversarial pass sharpens two existing primitives and adds one new one, yielding a final set of seventeen primitives. Six of the adversarial domains fit the original set cleanly; two (constraint logic programming and theorem proving) motivate the addition of Checkpoint, a hierarchical rollback primitive; lattice dataflow motivates a widening mode on ConvergenceGovernor; and unification motivates an explicit monotonicity invariant on ResourceRegistry. The primitive set is sufficient, not provably minimal.
 
-DAC operates in three modes. As an analytical tool, it decomposes existing systems to reveal hidden structural isomorphisms. As a generative methodology, it provides a search strategy for solving problems that resist solution in their native vocabulary: strip the vocabulary, map to the primitive set, and check whether the "hard" part is a solved problem wearing unfamiliar terminology. As an implementation methodology, it decomposes any computation described in domain-specific notation into a build plan composed of known primitives.
+DAC operates in three modes. As an analytical tool, it decomposes existing systems to reveal structural isomorphisms. As a generative methodology, it provides a search strategy for problems that resist solution in their native vocabulary: strip the vocabulary, map to the primitive set, and check whether the difficulty resides in a solved problem wearing unfamiliar terminology. As an implementation methodology, it decomposes any computation described in domain-specific notation into a build plan composed of known primitives.
 
-We demonstrate the generative and implementation modes through LeanFormer, a novel transformer architecture where DAC was applied systematically to six open problems in neural network design: parameter inefficiency, attention cost, catastrophic forgetting, knowledge composition, confabulation, and training process inefficiency. In each case, stripping the ML vocabulary revealed the problem's structural identity with a solved problem from systems engineering. The initial proof-of-concept architecture was designed and built in 24 hours. Subsequent validation at 39M parameters (76M dense equivalent) confirmed the architectural thesis across 119 tests, with results including 84% belief injection success, 86% semantic routing accuracy, bit-for-bit base weight restoration across 100 beliefs, and 88% attention sparsity. The sixth problem extended DAC beyond the model architecture to the entire model lifecycle: data ingestion, gradient computation, evaluation, knowledge forging, and deployment preparation. Scale validation at 204M parameters (805M dense equivalent, 7,228 optimizer steps) confirmed that all sixteen primitives compose correctly under real training conditions: zero budget violations across 722 hash-chained audit records, 18 valid governor state transitions with no skipped states, and coarse-to-fine hierarchy activation with the final level (L3) activating at step 2,773 via genuine convergence gating. Best validation perplexity reached 57.6 at step 2,000.
+Two engineering systems, built on the primitive set, serve as empirical validation. LeanFormer is a novel transformer architecture in which DAC was applied to six open problems in neural network design. The initial proof-of-concept was designed and built in 24 hours. Validation at 39M parameters (76M dense equivalent) confirmed the architectural thesis across 119 tests. A 204M-parameter run (805M dense equivalent) with a full DAC-governed training pipeline confirmed that the primitive set composes correctly under real training conditions: zero budget violations across 722 hash-chained audit records, eighteen valid convergence-governor state transitions with no skipped states, and coarse-to-fine hierarchy activation with the final level activating at step 2,773 via genuine convergence gating. Orkestratum is an application runtime built on the same primitive modules as a single codebase, which executes SOAR playbooks, CI/CD pipelines, ETL workflows, configuration-management workloads, and a real-time renderer. Multiple domains run on one runtime, with the domain-specific part being the workload graph and the task functions, not the execution engine. LeanFormer addresses the "methodology applied to one domain" objection; Orkestratum addresses the "methodology applied in the abstract, not demonstrated as a runtime" objection.
 
-During the 204M training run, a B=0 initialization artifact caused premature hierarchy activation at the lower levels, providing an unplanned opportunity to apply DAC to its own failure. Stripping the ML vocabulary from the failure description revealed an observational degeneracy: two qualitatively different gradient trajectories (cold start and genuine convergence) producing the same low-magnitude reading, a pattern already solved in the collapse table by depth buffers in rendering, heartbeat protocols in networking, and timeouts in distributed consensus. The fix (a phase-aware ConvergenceGovernor that tracks whether gradient magnitude has ever exceeded the threshold) was formally verified in TLA+ across 18.6 million states. The methodology diagnosed and resolved its own failure by recognizing the structural identity of a novel ML training bug with solved problems from other domains.
+During the 204M LeanFormer training run, a B=0 initialization artifact caused premature hierarchy activation at the lower levels, providing an unplanned opportunity to apply DAC to its own failure. Stripping ML vocabulary from the failure revealed an observational degeneracy: two qualitatively different gradient trajectories (cold start and genuine convergence) producing the same low-magnitude reading, a pattern already solved in the collapse table by depth buffers in rendering, heartbeat protocols in networking, and timeouts in distributed consensus. The fix (a phase-aware ConvergenceGovernor that tracks whether gradient magnitude has ever exceeded the threshold) was formally verified in TLA+ across 18.6 million states before implementation. The methodology diagnosed its own failure by recognizing the structural identity of a novel ML training bug with solved problems from other domains.
 
-To demonstrate that the primitive set is not tied to a single language, framework, or codebase, Appendix A provides implementations of all sixteen primitives in multiple programming languages (Rust, Python, Go, TypeScript) across multiple domains. The structural identity is visible in the code: the same loop, the same invariant, the same state machine appears in every language. Only the type annotations and domain functions change.
+All seventeen primitive specifications and five LeanFormer compositions were formally specified in TLA+ and verified by the TLC model checker across approximately 45.4 million states at the tested bounds. Every primitive's safety invariants held under exhaustive state exploration. Every decomposition of a primitive into sub-operations produced a concrete counterexample where the invariant was violated, demonstrating operational irreducibility: the governance property requires atomicity and cannot survive decomposition. Operational irreducibility is a weaker claim than algebraic minimality (which remains open) but stronger than the unverified primitive sets common in practice. The verification process challenged and refined five initial assumptions about the specifications; the corrections sharpened imprecise classifications without weakening any claim.
 
-All nineteen primitive specifications and five LeanFormer compositions were formally specified in TLA+ and verified by the TLC model checker across approximately 45.4 million states. Every primitive's safety invariants held under exhaustive state exploration. Every decomposition of a primitive into sub-operations produced a concrete counterexample where the invariant was violated, proving each primitive is operationally irreducible: the governance property requires atomicity and cannot survive decomposition. The B=0 initialization bug discovered during training was reproduced as a TLC counterexample (2 states, matching the real-world failure), and a phase-aware ConvergenceGovernor specification that prevents the bug was verified across 18.6 million states. The verification process also challenged and refined several initial assumptions about the specifications, producing five corrections that improved the formal model. These corrections did not invalidate the underlying primitives or their invariants; they sharpened the distinction between global invariants that must hold at every state and preconditions that must hold at the moment of an operation.
+The central thesis is that domain-specific vocabulary is the primary obstacle to recognizing that many computational problems have already been solved. The essential computational structures underlying apparently diverse systems are few, shared across domains, and well-understood. DAC is the methodology for revealing this, and its value lies not only in understanding but in building: once the vocabulary is stripped, the "hard problem" in one domain becomes a known solution from another, and the primitive set becomes a construction kit for engineering solutions to problems that appeared hard only because their domain vocabulary obscured their structural identity with solved problems.
 
-The central claim is that domain-specific vocabulary is the primary obstacle to recognizing that most computational problems have already been solved. The essential computational structures underlying apparently diverse systems are few, well-understood, and shared across domains. Domain Abstraction Collapse is the methodology for revealing this, and its value lies not just in understanding but in building: once the vocabulary is stripped, the "hard problem" in one domain becomes a known solution from another, and the collapsed primitive set becomes a construction kit for engineering solutions to problems that appeared hard only because their domain vocabulary obscured their structural identity with solved problems.
+The methodology has limits. The claims in this paper are bounded to the twenty examined domains, all of which share computational characteristics that favor the primitive set. The primitive set is sufficient but not provably minimal. Cross-domain optimization transfer has been demonstrated within the LeanFormer and Orkestratum engineering programs; broader cross-domain transfer remains future work. The empirical validation at 204M parameters demonstrates governance correctness, not production-scale efficiency gains. These limitations are stated explicitly throughout the paper and are not rhetorical concessions: they are the boundary of what the evidence currently supports.
 
 ---
 
@@ -31,13 +31,13 @@ The central claim is that domain-specific vocabulary is the primary obstacle to 
 
 ### 1.1 The Problem of Accidental Specialization
 
-Fred Brooks distinguished between essential complexity (complexity inherent to the problem being solved) and accidental complexity (complexity introduced by the tools and methods used to solve it) [1]. This paper identifies a third category: vocabulary-induced complexity, where the domain-specific language used to describe a problem creates the false impression that the problem itself is domain-specific.
+Fred Brooks distinguished between essential complexity (complexity inherent to the problem being solved) and accidental complexity (complexity introduced by the tools and methods used to solve it) [1]. This paper identifies a third category: vocabulary-induced complexity, where domain-specific language used to describe a problem creates the impression that the problem itself is domain-specific.
 
 Consider the Entity Component System (ECS), the dominant architectural pattern in game engine development since the late 1990s. An entity is a unique identifier. A component is a typed data record associated with an entity. A system is a function that queries entities by their component composition and applies transformations. This pattern has been independently reinvented by every major game engine, each using different vocabulary: Unity calls them GameObjects and MonoBehaviours, Unreal calls them Actors and Components, Bevy calls them Entities, Components, and Systems.
 
-Stripped of game-specific vocabulary, an ECS is a relational database. Entities are rows. Components are columns. Systems are queries with side effects. The ECS pattern's real contribution was cache-friendly memory layout through structure-of-arrays organization, a genuine innovation in data access patterns. But the structural pattern itself (typed records queried by composition and transformed by functions) is a relational database without the formal semantics, query planning, or ACID guarantees that the database community had spent decades developing. Every game engine team since the late 1990s has reinvented this structure independently, each time believing it to be a game-specific innovation, because the vocabulary made it look like one.
+Stripped of game-specific vocabulary, an ECS is a relational database. Entities are rows. Components are columns. Systems are queries with side effects. The ECS pattern's real contribution was cache-friendly memory layout through structure-of-arrays organization, a genuine innovation in data access patterns. But the structural pattern itself (typed records queried by composition and transformed by functions) is a relational database without the formal semantics, query planning, or ACID guarantees that the database community developed over decades. Every game engine team since the late 1990s has reinvented this structure independently, each time believing it to be a game-specific innovation, because the vocabulary made it look like one.
 
-This is not an isolated example. It is the norm. Across every engineering domain we examined, systems that appear to solve domain-specific problems with domain-specific architectures are, when the vocabulary is stripped away, compositions of a small number of generic computational patterns that have been solved repeatedly in different clothing.
+This is not an isolated example. Across every engineering domain examined in this paper, systems that appear to solve domain-specific problems with domain-specific architectures are, when the vocabulary is stripped away, compositions of a small number of generic computational patterns that have been solved repeatedly in different clothing.
 
 ### 1.2 The Methodology: Domain Abstraction Collapse
 
@@ -49,13 +49,13 @@ Domain Abstraction Collapse (DAC) is a systematic process with five steps:
 
 3. Identify cross-domain isomorphisms. Compare the stripped descriptions across domains. When two abstractions from different domains reduce to the same structural description, they are the same operation in different clothing.
 
-4. Reduce to abstraction primitives. Continue stripping until no further decomposition is possible without losing governance and composability properties. The operations that survive this process are the abstraction primitives: operations that cannot be further decomposed without either descending to an implementation level where domain patterns require unbounded composition counts, or losing the formal properties (budget invariants, convergence detection, audit completeness) that make cross-domain composition useful.
+4. Reduce to abstraction primitives. Continue stripping until no further decomposition is possible without losing governance and composability properties. The operations that survive are the abstraction primitives: operations that cannot be further decomposed without either descending to an implementation level where domain patterns require unbounded composition counts, or losing the formal properties (budget invariants, convergence detection, audit completeness) that make cross-domain composition useful.
 
 5. Reconstruct domains as compositions. Verify that every domain-specific abstraction from step 1 can be expressed as a composition of the abstraction primitives from step 4, instantiated with domain-specific data and functions.
 
-If step 5 succeeds with no residual (every domain pattern is expressible, and no domain pattern requires a primitive not in the set) the collapse is complete. The domain-specific abstractions were vocabulary, not structure.
+If step 5 succeeds with no residual (every domain pattern is expressible, and no domain pattern requires a primitive not in the set), the collapse is complete for that domain. The domain-specific abstractions were vocabulary, not structure.
 
-These five steps describe DAC as an analytical methodology: decomposing existing systems to find what they share. But the same process works in reverse as an implementation methodology. Given any computation described in domain-specific notation (a mathematical formula, a protocol specification, a biological pathway diagram), the practitioner strips the notation's vocabulary and maps the computation's structure to the primitive set. The result is not a description or an analogy. It is a build plan: a composition of known, tested primitives that implements the computation. The notation tells you what the answer should be. The DAC decomposition tells you how to build the machine that computes it. Section 5 develops this generative and implementation application in detail.
+These five steps describe DAC as an analytical methodology: decomposing existing systems to find what they share. The same process works in reverse as an implementation methodology. Given any computation described in domain-specific notation (a mathematical formula, a protocol specification, a biological pathway diagram), the practitioner strips the notation's vocabulary and maps the computation's structure to the primitive set. The result is not a description or an analogy. It is a build plan: a composition of known, tested primitives that implements the computation. The notation describes what the answer should be. The DAC decomposition describes how to build the machine that computes it. Section 5 develops this application in detail.
 
 ### 1.3 Abstraction Primitives: Why the Decomposition Stops Here
 
@@ -63,59 +63,61 @@ The term "abstraction primitive" requires a precise definition because the level
 
 An abstraction primitive is an operation that cannot be further decomposed without one of two consequences:
 
-(a) Loss of governance semantics. The primitive carries formal properties (budget invariants, convergence detection, audit completeness, transaction atomicity) that make cross-domain composition meaningful. Decompose below this level and those properties must be reimplemented per domain, which is exactly the redundancy DAC eliminates.
+(a) Loss of governance semantics. The primitive carries formal properties (budget invariants, convergence detection, audit completeness, transaction atomicity) that make cross-domain composition meaningful. Decompose below this level and those properties must be reimplemented per domain, which is the redundancy DAC eliminates.
 
 (b) Explosion of composition count. At lower levels of abstraction (register operations, logic gates, individual arithmetic instructions), expressing a single domain pattern requires hundreds or thousands of composed operations, and the compositions become unwieldy enough to lose their explanatory and constructive value.
 
-The abstraction primitives sit at the governance boundary: the thinnest layer of operations that still carries formal properties. Below this boundary, you have implementation details that vary by hardware and runtime. Above it, you have domain vocabulary that prevents cross-domain reuse. NAND gates are primitives but not abstraction primitives, because they carry no governance semantics. Domain-specific patterns like "visibility buffer" or "playbook" are not primitives at all, because they decompose into compositions of the abstraction primitive set.
+The abstraction primitives sit at the governance boundary: the thinnest layer of operations that still carries formal properties. Below this boundary are implementation details that vary by hardware and runtime. Above it is domain vocabulary that prevents cross-domain reuse. NAND gates are primitives but not abstraction primitives because they carry no governance semantics. Domain-specific patterns such as "visibility buffer" or "playbook" are not abstraction primitives because they decompose into compositions of the primitive set.
 
-This is analogous to the concept of an irreducible element in algebra: an element that cannot be factored into a product of non-trivial elements. The abstraction primitives are irreducible with respect to governance-preserving decomposition. Section 9.4 provides formal evidence for this claim: TLA+ specifications of all sixteen primitives were subjected to systematic decomposition, and the TLC model checker produced concrete counterexamples for every decomposition, demonstrating that splitting any primitive into sub-operations creates reachable states where the governance invariant is violated. This is operational irreducibility: the guard and the guarded operation are structurally inseparable. The question of algebraic minimality (whether any primitive can be expressed as a composition of other primitives in the set) is addressed separately in Section 9.1.
+This is analogous to the concept of an irreducible element in algebra: an element that cannot be factored into a product of non-trivial elements. The abstraction primitives are irreducible with respect to governance-preserving decomposition. Section 9.4 provides formal evidence: TLA+ specifications of all seventeen primitives were subjected to systematic decomposition, and the TLC model checker produced concrete counterexamples for every decomposition, demonstrating that splitting any primitive into sub-operations creates reachable states where the governance invariant is violated. This is operational irreducibility: the guard and the guarded operation are structurally inseparable. The question of algebraic minimality (whether any primitive can be expressed as a composition of other primitives in the set) is addressed separately in Section 9.1 and remains open.
 
 ### 1.4 Relationship to Existing Work
 
-DAC draws from several established intellectual traditions while making a more specific claim than any of them individually.
+DAC draws from several established intellectual traditions.
 
-Category theory formalizes the notion of structure-preserving mappings between mathematical domains. When we say "attention is competitive selection with softmax instead of argmax," we are identifying a structure-preserving map between the category of neural network operations and the category of kernel primitives. DAC is the engineering application of categorical thinking to systems design, without requiring the formalism, because the insight is accessible to practitioners who would never encounter a functor.
+Category theory formalizes structure-preserving mappings between mathematical domains. When this paper claims that attention is soft competitive selection, it is identifying a structure-preserving map between the category of neural network operations and the category of allocation primitives. DAC is the engineering application of categorical thinking to systems design, without requiring the formalism, because the insight is accessible to practitioners who would not otherwise encounter a functor.
 
-Dimensional reduction from data science captures the mathematical structure of what DAC does: we take a high-dimensional space of domain-specific operations and discover that its actual dimensionality is much lower. The "dimensions" that are eliminated were linearly dependent. They appeared independent because they had different names and lived in different domains.
+Dimensional reduction from data science captures the mathematical structure of what DAC does: take a high-dimensional space of domain-specific operations and discover that its actual dimensionality is much lower. The "dimensions" that are eliminated were linearly dependent. They appeared independent because they had different names and lived in different domains.
 
 Brooks' essential/accidental complexity distinction [1] is the philosophical ancestor. DAC sharpens the claim: the accidental complexity is not merely in the tools, but in the conceptual framing of the problem itself. Domain-specific vocabulary is a cognitive lens that makes accidental specialization feel essential.
 
-Unification in physics is the closest structural analogue. Maxwell unified electricity and magnetism by showing they were aspects of a single electromagnetic field. Einstein unified space and time into spacetime. DAC unifies what were treated as independent computational domains by showing they are instantiations of a single set of primitives. The structure is the same: take things everyone treats as fundamentally different, demonstrate they are instances of the same thing, and rebuild from the unified foundation.
+This paper does not claim that DAC is analogous to physical unifications such as Maxwell's unification of electricity and magnetism or Einstein's unification of space and time. Those unifications produced novel empirical predictions (electromagnetic waves, gravitational lensing) that were later confirmed. DAC's analogous achievement would be: an optimization discovered in one domain, applied to another domain via a shared primitive, producing a measurable improvement in the second domain that was not previously known. Evidence for this specific kind of transfer is accumulating within the engineering programs described in this paper but has not been demonstrated at the breadth required to support the physics analogy. The honest analogue is dimensional reduction on an engineering corpus, not physical unification.
 
 ### 1.5 Addressing the Turing Tarpit Objection
 
-A common defense against unification theories in computer science is the "Turing Tarpit" argument: because everything is Turing complete, of course everything can be mapped to anything else. If you reduce far enough, everything is NAND gates, and the unification is trivially true but operationally useless.
+A standard defense against unification theories in computer science is the Turing Tarpit argument: because everything is Turing complete, of course everything can be mapped to anything else. If one reduces far enough, everything is NAND gates, and the unification is trivially true but operationally useless.
 
-DAC's defense against this objection is empirical, not theoretical. The sixteen primitives were not designed top-down from a theory of computation. They were discovered bottom-up by collapsing twelve independent domains and finding what survived. The collapse was incremental. SOAR automation was the first domain examined. Rendering was added second and forced the addition of new primitives (QualityHierarchy, TraversalEngine, CompetitiveSelection) that SOAR alone did not require. Each subsequent domain either mapped onto existing primitives or forced new primitives to be added when the existing set was genuinely insufficient.
+DAC's defense against this objection is empirical. The primitives were not designed top-down from a theory of computation. They were discovered bottom-up by collapsing domains and observing what survived. The collapse was incremental. SOAR automation was examined first. Rendering was added second and forced the addition of new primitives (QualityHierarchy, TraversalEngine, CompetitiveSelection) that SOAR alone did not require. Each subsequent domain either mapped onto existing primitives or forced new primitives to be added when the existing set was genuinely insufficient.
 
-If the primitives were too low-level (register operations, logic gates), the collapse would have produced hundreds of primitives per domain pattern and the compositions would be unwieldy. If they were too high-level (domain-specific abstractions), no shared primitives would have emerged across domains at all. The fact that sixteen primitives sufficed for twelve domains, discovered independently through incremental domain analysis rather than designed to fit, is the empirical evidence that the decomposition level is correct. The primitives sit at the level where governance, structure, and composability are preserved without descending into implementation details that vary by hardware or runtime.
+If the primitives were too low-level (register operations, logic gates), the collapse would have produced hundreds of primitives per domain pattern and the compositions would be unwieldy. If they were too high-level (domain-specific abstractions), no shared primitives would have emerged across domains. That seventeen primitives suffice for twenty domains, discovered incrementally through domain analysis rather than designed to fit, is empirical evidence that the decomposition level is defensible.
+
+The adversarial domain pass described in Section 2.5 sharpens this evidence. When DAC was applied to domains chosen specifically because they did not share the resource-governed execution character of the original twelve, six of eight mapped onto the existing primitive set with no additions, one motivated a mode extension on an existing primitive, one motivated an explicit invariant on an existing primitive, and two motivated the addition of one new primitive (Checkpoint). A methodology that survives adversarial testing with one addition is more credible than one that claims to cover everything.
 
 ### 1.6 Contributions
 
 This paper makes seven contributions:
 
-1. Formalization of Domain Abstraction Collapse as a named, repeatable design methodology with defined steps, a formal criterion for what constitutes an abstraction primitive, and a completeness criterion.
+1. Formalization of Domain Abstraction Collapse as a named, repeatable design methodology with defined steps, a formal criterion for what constitutes an abstraction primitive, and completeness and operational-irreducibility criteria.
 
-2. Empirical demonstration across twelve engineering domains, showing that all twelve reduce to a common set of sixteen orthogonal abstraction primitives, with honest assessment of which collapses represent genuine structural insights and which are trivially true.
+2. Empirical demonstration across twelve engineering domains plus eight adversarial domains, showing that twenty domains reduce to a common set of seventeen abstraction primitives, with explicit assessment of which collapses are genuine structural insights and which are trivially true.
 
 3. Identification and decomposition of the Competitive Selection family, resolving the overcounting problem inherent in treating structurally distinct selection mechanisms as a single primitive.
 
-4. Demonstration of DAC as a generative engineering methodology through LeanFormer, a novel transformer architecture where DAC was used not to analyze an existing system but to engineer solutions to six open problems by recognizing their structural identity with solved problems from other domains. The sixth problem (training process inefficiency) extends the demonstration from model architecture to the complete model lifecycle.
+4. Demonstration of DAC as a generative engineering methodology through LeanFormer, a novel transformer architecture in which DAC was used to engineer solutions to six open problems by recognizing their structural identity with solved problems from other domains.
 
-5. Articulation of DAC as an implementation methodology that produces build plans: given any computation described in domain-specific notation, DAC decomposes it into a composition of known primitives that specifies what to build, in what order, and with what governance properties.
+5. Demonstration of DAC as a multi-domain runtime foundation through Orkestratum, an application runtime built on the primitive modules that executes SOAR playbooks, CI/CD pipelines, ETL workflows, configuration-management workloads, and a real-time renderer on one codebase.
 
-6. Demonstration that DAC can govern not just what a system is (architecture) and what it knows (knowledge management) but how it learns (training), how it is assessed (evaluation), how its knowledge is produced (forging), and how it is deployed (inference preparation). The targeted training system applies the same primitive set that governs the model's architecture to govern the model's entire lifecycle, validated at 204M parameters across 7,228 training steps with all governance invariants holding throughout, including through severe overfitting, confirming that governance correctness is independent of model generalization quality.
+6. Articulation of DAC as an implementation methodology that produces build plans: given any computation described in domain-specific notation, DAC decomposes it into a composition of known primitives with specified governance properties.
 
-7. Formal verification of all nineteen primitive specifications and five LeanFormer compositions in TLA+, with exhaustive model checking across approximately 45.4 million states. The verification establishes three results: every primitive's invariants hold under all reachable states, the composed LeanFormer system preserves primitive invariants while producing emergent system-level guarantees, and every primitive is operationally irreducible (decomposition into sub-operations produces concrete counterexamples where invariants are violated, demonstrating that the governance property requires atomicity). A real training bug (B=0 initialization causing premature convergence detection) was diagnosed using DAC's own vocabulary-stripping methodology, reproduced as a TLC counterexample, and fixed with a phase-aware governor specification verified across 18.6 million states. The methodology applied to its own failure demonstrates the generative mode operating in real time.
+7. Formal verification of all seventeen primitive specifications and five LeanFormer compositions in TLA+, with bounded model checking across approximately 45.4 million states at the tested bounds. The verification establishes that every primitive's invariants hold under all reachable states at those bounds, that the composed LeanFormer system preserves primitive invariants while producing emergent system-level guarantees, and that every primitive is operationally irreducible. A real training bug (B=0 initialization causing premature convergence detection) was diagnosed using DAC's own vocabulary-stripping methodology, reproduced as a TLC counterexample, and fixed with a phase-aware governor specification verified across 18.6 million states before implementation.
 
 ---
 
-## 2. The Collapse: Twelve Domains, Sixteen Primitives
+## 2. The Collapse: Twenty Domains, Seventeen Primitives
 
-### 2.1 The Domains Examined
+### 2.1 The Original Twelve Domains
 
-The following twelve engineering domains were subjected to abstraction collapse. They were not selected a priori. They emerged as the application domains encountered during the design of a general-purpose execution framework, beginning with SOAR automation and expanding as each new domain revealed the same underlying structures.
+The following twelve engineering domains were subjected to abstraction collapse during the initial development of the methodology. They were not selected a priori. They emerged as the application domains encountered during the design of a general-purpose execution framework, beginning with SOAR automation and expanding as each new domain revealed the same underlying structures.
 
 | # | Domain | Entry Point |
 |---|--------|-------------|
@@ -132,11 +134,11 @@ The following twelve engineering domains were subjected to abstraction collapse.
 | 11 | Distributed Consensus | Fixed-point iteration over a cluster graph (RAFT) |
 | 12 | Machine Learning | Complete AI lifecycle decomposed to primitives |
 
-A methodological concern worth stating explicitly: these twelve domains are all infrastructure and systems domains with a strong bias toward "things that allocate resources under constraints." Domains outside this family (functional reactive programming, formal theorem proving, constraint logic programming, bioinformatics sequence alignment) have not been tested and may not collapse as cleanly. The claim is bounded to the twelve domains examined.
+A methodological concern stated explicitly: these twelve domains are all infrastructure and systems domains with a strong bias toward resource-governed execution. Domains outside this family may not collapse as cleanly. Section 2.5 addresses this by applying the methodology to eight adversarial domains chosen specifically because they do not share this character.
 
 ### 2.2 The Abstraction Primitive Set
 
-After abstraction collapse across all twelve domains, sixteen primitives survived: operations that could not be further decomposed without losing governance semantics, and that appeared in multiple domains in different vocabulary.
+After abstraction collapse across the twenty examined domains (twelve original plus eight adversarial), seventeen primitives survived: operations that could not be further decomposed without losing governance semantics and that appeared in multiple domains in different vocabulary.
 
 Data Primitives (how data is structured and related):
 
@@ -147,7 +149,7 @@ Data Primitives (how data is structured and related):
 | QualityHierarchy | A tree where each node represents a resource at a quality level |
 | AllocationSnapshot | A materialized record of which hierarchy nodes are currently allocated |
 | RelationshipGraph\<N,E\> | A weighted directed graph over entities with typed edges |
-| ResourceRegistry\<K,V\> | A map from resource IDs to the data needed to actuate them |
+| ResourceRegistry\<K,V\> | A map from resource IDs to the data needed to actuate them, optionally carrying a monotonicity invariant (added in Section 2.5 for unification) |
 
 Computation Primitives (how computation is expressed):
 
@@ -159,23 +161,24 @@ Computation Primitives (how computation is expressed):
 | ActuationPass\<R\> | Apply a function to allocated seats only |
 | Reduction\<T,R\> | Aggregate a collection to a scalar |
 | Sampler\<T\> | Draw a value from a probability distribution |
+| Checkpoint | Establish a scoped rollback boundary for nested undo (added in Section 2.5 for constraint logic programming and theorem proving) |
 
 Governance Primitives (how computation is governed):
 
 | Primitive | Single Responsibility |
 |-----------|----------------------|
-| ConvergenceGovernor | Detect fixed-point convergence and govern iteration count |
+| ConvergenceGovernor | Detect fixed-point convergence and govern iteration count, optionally in widening mode (extended in Section 2.5 for lattice dataflow) |
 | Signal\<T\> | Notify dependents when a value changes |
 | RateLimit | Constrain throughput within a time window |
 | AuditSink | Observe every mutation in an append-only log |
 
-These sixteen primitives compose through five modes: pipeline (Unix pipe model, output of A is input of B), wrapping (OSI stack model, B adds one concern over A), instantiation (generic primitive parameterized with domain function), feedback (output of a later stage governs an earlier stage), and parallel composition (independent primitives operating on partitioned data).
+These seventeen primitives compose through five modes: pipeline (Unix pipe model, output of A is input of B), wrapping (OSI stack model, B adds one concern over A), instantiation (generic primitive parameterized with domain function), feedback (output of a later stage governs an earlier stage), and parallel composition (independent primitives operating on partitioned data).
 
-A note on the relationship to existing computational abstractions: several of these primitives resemble standard functional programming operations. ActuationPass resembles Map. Reduction resembles Fold. CompetitiveSelection resembles Filter composed with Sort or Max. Budget resembles a semaphore or resource counter. TraversalEngine resembles standard graph search. This resemblance is real, and acknowledging it is important for intellectual honesty.
+A note on the relationship to existing computational abstractions: several of these primitives resemble standard functional programming operations. ActuationPass resembles Map. Reduction resembles Fold. CompetitiveSelection resembles Filter composed with Sort or Max. Budget resembles a semaphore or resource counter. TraversalEngine resembles standard graph search. This resemblance is real, and acknowledging it is important.
 
 The distinction is governance semantics. Map applies a function to every element of a collection. ActuationPass applies a function only to elements that were allocated by a prior CompetitiveSelection or TraversalEngine pass. It is Map constrained by an allocation record, and the constraint is enforced structurally, not by convention. Fold aggregates a collection with no guarantee about processing order or uniqueness. Reduction in DAC carries the partition invariant: every item is processed exactly once, and processed and remaining items are always disjoint. A semaphore controls access to a critical section. Budget\<U\> enforces a capacity ceiling with no bypass mechanism (there is no ForceAllocate), and the invariant composes upward into FederatedBudget where the two-level guarantee holds atomically.
 
-The contribution is not the existence of these operations. Every programmer uses them daily. The contribution is threefold: that exactly these sixteen, at exactly this level of governance semantics, suffice to express twelve domains; that they compose with governance properties preserved across domain boundaries; and that no one has previously identified this specific set as the shared structural foundation underlying rendering, scheduling, consensus, training, and eight other domains. The operations are familiar. The unification is not.
+The contribution is not the existence of these operations. Every programmer uses them daily. The contribution is threefold: that exactly these seventeen, at exactly this level of governance semantics, suffice to express twenty domains; that they compose with governance properties preserved across domain boundaries; and that this specific set has not previously been identified as the shared structural foundation underlying rendering, scheduling, consensus, training, theorem proving, type inference, and fourteen other domains. The operations are familiar. The unification is not.
 
 ### 2.3 Primitives in Concrete Form
 
@@ -257,7 +260,7 @@ This invariant holds for every Budget\<U\> in the system at all times, whether U
 
 The following table documents each domain-specific abstraction that was collapsed, what it was believed to be, and what it actually is when stripped of domain vocabulary. This is the core empirical evidence for the methodology.
 
-An honest note on the strength of individual collapses: some entries in this table represent genuine structural insights where the mapping is surprising and illuminating (attention as competitive selection, the DAG workload collapse). Others are closer to observations that generic operations exist (a lookup table is a lookup table, a map function is a map function). The latter are included for completeness but should not be mistaken for deep structural discoveries. They confirm that the primitive set covers the domain, not that the domain was hiding something unexpected.
+An honest note on the strength of individual collapses: some entries in this table represent genuine structural insights where the mapping is surprising and illuminating (attention as competitive selection, the DAG workload collapse). Others are closer to observations that generic operations exist (a lookup table is a lookup table, a map function is a map function). The trivial collapses are marked as such and are included for completeness. They confirm that the primitive set covers the domain; they do not constitute deep structural discoveries.
 
 Real-Time Rendering:
 
@@ -304,9 +307,9 @@ Container Orchestration:
 |---|---|
 | Kubernetes controller | Budget\<CPU/Memory\> + ConvergenceGovernor: budget-constrained actuator converging toward desired state |
 | Pod scheduling | CompetitiveSelection (hard): pods compete for node placement seats under resource constraints |
-| Auto-scaling | TemporalOrchestrator + Budget\<Instances\>: PID-like feedback governing resource allocation over time |
+| Auto-scaling | Budget\<Instances\> + Signal + feedback composition: feedback governing resource allocation over time |
 | Health checking | Reduction\<HealthProbe, Status\> + Signal\<StatusChange\>: aggregate health probes, signal on change |
-| Service discovery | ResourceRegistry\<ServiceName, Endpoint\>: a lookup table (trivial collapse) |
+| Service discovery | ResourceRegistry\<ServiceName, Endpoint\>: a lookup table (trivial) |
 
 CI/CD Pipelines:
 
@@ -314,16 +317,16 @@ CI/CD Pipelines:
 |---|---|
 | Pipeline stage | ActuationPass with a capability-gated I/O boundary |
 | Pipeline DAG | RelationshipGraph\<Stage, Dependency\> + TraversalEngine |
-| Artifact caching | Memoize\<BuildInput, BuildOutput\> with content-hash invalidation |
+| Artifact caching | Memoize\<BuildInput, BuildOutput\> with content-hash invalidation (named composition over ResourceRegistry + Reduction) |
 | Parallel test execution | Budget\<Compute\> + Sampler\<TestPartition\>: budget-constrained parallel work |
 
 ETL / Data Pipelines:
 
 | Domain Abstraction | What It Actually Is |
 |---|---|
-| Extract stage | ActuationPass: I/O-gated data retrieval from a ResourceRegistry (trivial collapse) |
-| Transform stage | ActuationPass: map function over data (trivial collapse) |
-| Load stage | ActuationPass + Transaction: atomic write to destination (trivial collapse) |
+| Extract stage | ActuationPass: I/O-gated data retrieval from a ResourceRegistry (trivial) |
+| Transform stage | ActuationPass: map function over data (trivial) |
+| Load stage | ActuationPass + Transaction: atomic write to destination (trivial for the ActuationPass part) |
 | Backfill | TraversalEngine over a temporal QualityHierarchy: budget-constrained reprocessing |
 
 Configuration Management:
@@ -333,7 +336,7 @@ Configuration Management:
 | Desired state convergence | ConvergenceGovernor: detect current vs. desired state delta, iterate until converged |
 | Idempotent operation | ActuationPass with Diff\<State\>: only actuate if delta is non-zero |
 | Role/playbook | RelationshipGraph\<Task, Dependency\> + TraversalEngine: a DAG workload |
-| Inventory | ResourceRegistry\<Host, Configuration\> (trivial collapse) |
+| Inventory | ResourceRegistry\<Host, Configuration\> (trivial) |
 
 SOAR (Security Orchestration, Automation, and Response):
 
@@ -341,7 +344,7 @@ SOAR (Security Orchestration, Automation, and Response):
 |---|---|
 | Playbook | RelationshipGraph\<Action, Dependency\> + TraversalEngine: a DAG workload with capability-gated I/O, structurally identical to CI/CD pipelines, ETL workflows, and configuration management playbooks |
 | Alert triage | CompetitiveSelection (ranked): alerts compete for analyst attention seats, prioritized by severity score |
-| Enrichment | ActuationPass + ResourceRegistry: look up context from external sources (trivial collapse) |
+| Enrichment | ActuationPass + ResourceRegistry: look up context from external sources (trivial) |
 | Response action | ActuationPass with capability-based access control |
 
 Distributed Consensus (RAFT):
@@ -367,21 +370,123 @@ Machine Learning (see Section 6 for the extended analysis):
 | Domain Abstraction | What It Actually Is |
 |---|---|
 | Attention mechanism | CompetitiveSelection (soft): tokens compete for attention weight, similarity is the scoring function, softmax produces weighted combination [2] |
-| Backpropagation | PropagationPass (single-pass variant): reverse message passing on the computation graph (see Section 6.1 for the precision caveat) |
+| Backpropagation | A member of the PropagationPass family — a single reverse pass on a DAG, distinct from iterative relaxation (see Section 6.1) |
 | Speculative decoding | Two-level CompetitiveSelection: fast model generates candidates (coarse), slow model verifies (fine) [8] |
 | Beam search | CompetitiveSelection (ranked): candidate continuations compete for K beam seats |
 | KV cache | Memoize\<SequencePosition, (Key, Value)\> with position-based invalidation |
-| Learning rate scheduling | TemporalOrchestrator: PID-like feedback governing a resource (learning rate) over time |
+| Learning rate scheduling | Feedback composition over Budget\<LearningRate\>: scheduled adjustment of a resource |
 | Early stopping | ConvergenceGovernor: detect when validation loss improvement falls below threshold |
 | LoRA / Adapters | Budget\<Parameters\>: constrain trainable parameters to a fraction of total [6] |
 | Dropout | Sampler\<ActivationMask\>: probabilistic selection of active neurons |
 | Loss computation | Reduction\<Prediction, Scalar\>: aggregate prediction-ground-truth distances |
-| Uniform gradient computation | Brute-force evaluation: every parameter receives gradient from every sample regardless of relevance. Structurally identical to evaluating every triangle against every pixel before visibility buffers. The absence of CompetitiveSelection gating in the gradient path |
+| Uniform gradient computation | Brute-force evaluation: every parameter receives gradient from every sample regardless of relevance. The absence of CompetitiveSelection gating in the gradient path |
 | Fixed-interval evaluation | Brute-force assessment: every metric evaluated at every checkpoint regardless of what parameters changed. The absence of Signal\<ConvergenceChange\> + change-impact analysis |
 | Flat parameter training | All parameters trained at the same fidelity from step 0. The absence of QualityHierarchy + TraversalEngine in the gradient path |
 | Uniform gradient budget | All parameter groups receive equal gradient compute regardless of learning need. The absence of FederatedBudget\<GradientCompute\> |
 | Layer freezing | Binary ConvergenceGovernor (per-group) without graduated states, budget reallocation, or reactivation |
 | Curriculum learning | QualityHierarchy over data only, without hierarchy over parameters or budget governance |
+
+### 2.5 The Adversarial Domain Pass
+
+A significant concern with the original twelve-domain collapse is that every domain examined shares a family resemblance: each is a resource-governed execution system where work is allocated under constraints, propagated through a graph, or aggregated into a result. A methodology that maps well to such domains may map poorly to domains with fundamentally different computational characters. This section tests the primitive set against eight domains chosen specifically because they do not share this character: unification, Hindley-Milner type inference, term rewriting, constraint logic programming, probabilistic programming, resolution-style theorem proving, symbolic differentiation, and lattice-theoretic dataflow analysis.
+
+The adversarial pass produces three outcomes. Six of the eight domains map onto the existing primitive set cleanly. One domain (lattice dataflow) requires a mode extension on an existing primitive (widening mode on ConvergenceGovernor). One domain (unification) motivates making an existing invariant first-class (monotonicity on ResourceRegistry). Two domains (constraint logic programming and theorem proving) motivate the addition of one new primitive: Checkpoint, which establishes a scoped rollback boundary for nested undo. The primitive count grows from sixteen to seventeen.
+
+Unification:
+
+| Operation | Decomposition |
+|---|---|
+| Substitution | ResourceRegistry\<Variable, Term\> with monotonicity invariant (writes are monotonic within a unification attempt) |
+| Term structure walk | TraversalEngine over parallel RelationshipGraphs |
+| Occurs check | PropagationPass with a boolean "reached" message |
+| Binding step | ActuationPass guarded by consistency precondition |
+| Termination | ConvergenceGovernor reaching a terminal state |
+
+The only gap was that ResourceRegistry did not carry monotonicity as a named invariant. This is now documented as an optional invariant on the primitive, not a new primitive.
+
+Hindley-Milner Type Inference:
+
+| Operation | Decomposition |
+|---|---|
+| Unification subroutine | Inherits from above |
+| Type environment | Stack of ResourceRegistry\<Ident, TypeScheme\> (lexical scoping as composition) |
+| Generalization | Reduction\<FreeTypeVar, TypeScheme\> |
+| Instantiation | Sampler\<TypeVariable\> in deterministic mode |
+
+No new primitive required.
+
+Term Rewriting:
+
+| Operation | Decomposition |
+|---|---|
+| Pattern matching | Bounded unification (one direction) |
+| Rule selection | CompetitiveSelection (ranked) over (rule, position) pairs |
+| Rule application | ActuationPass |
+| Termination detection | ConvergenceGovernor |
+| Rule set | ResourceRegistry\<RuleID, RewriteRule\> |
+
+No new primitive required.
+
+Constraint Logic Programming:
+
+| Operation | Decomposition |
+|---|---|
+| Constraint store | ResourceRegistry + PropagationPass for domain reduction |
+| Search tree | RelationshipGraph\<ChoicePoint, Alternative\> |
+| Search strategy | TraversalEngine with specific ordering |
+| Constraint propagation | PropagationPass + ConvergenceGovernor |
+| Backtracking | Checkpoint — NEW PRIMITIVE |
+
+CLP requires hierarchical backtracking: nested choice points each establish a restore boundary, and one unwinds through them in LIFO order. The existing Transaction named composition is binary (commit or abort) and does not support nested scopes. Checkpoint is introduced as a primitive: a scoped rollback boundary where any mutation done within a scope can be reverted on demand, and scopes nest. An attempt was made to express Checkpoint as a composition of AuditSink (records every mutation) and ActuationPass (replays the inverse in reverse order), but the composition does not preserve the atomicity and stack discipline that CLP requires, and the TLA+ decomposition test for Checkpoint produced a counterexample matching the expected failure mode. Checkpoint is therefore operationally irreducible and added to the primitive set.
+
+Probabilistic Programming:
+
+| Operation | Decomposition |
+|---|---|
+| Sample statement | Sampler\<T\> (same primitive, no translation needed) |
+| Condition statement | CompetitiveSelection (soft) with likelihood as scoring function |
+| MCMC transition | PropagationPass with Sampler-driven acceptance |
+| Variational inference | Reduction (ELBO) + PropagationPass (gradient) + ConvergenceGovernor |
+
+Probabilistic programming maps surprisingly cleanly because sampling and scoring are already primitives. No new primitive required.
+
+Resolution-style Theorem Proving:
+
+| Operation | Decomposition |
+|---|---|
+| Proof tree | RelationshipGraph\<Sequent, Inference\> |
+| Rule selection | CompetitiveSelection (ranked) |
+| Proof search | TraversalEngine with backtracking via Checkpoint |
+| Axiom base | ResourceRegistry\<AxiomID, Formula\> |
+| Unification for rule application | Inherits from above |
+
+Uses Checkpoint introduced above. No additional new primitive required.
+
+Symbolic Differentiation:
+
+| Operation | Decomposition |
+|---|---|
+| Expression tree | RelationshipGraph\<ExprNode, ChildEdge\> |
+| Differentiation rule application | TraversalEngine + ActuationPass at each node |
+| Simplification | Term rewriting (inherits from above) |
+
+This is a pure tree walk with no governance pressure. Trivial collapse; no new primitive required.
+
+Lattice-theoretic Dataflow Analysis:
+
+| Operation | Decomposition |
+|---|---|
+| Flow graph | RelationshipGraph |
+| Per-node abstract state | ResourceRegistry\<Node, LatticeValue\> |
+| Fixed-point iteration | PropagationPass + ConvergenceGovernor |
+| Join at merge points | Reduction with lattice's ⊔ as combining function |
+| Widening | ConvergenceGovernor in widening mode (NEW MODE) |
+
+Widening is what one does when a pure ConvergenceGovernor will not terminate because the lattice is infinite: it forces convergence by over-approximation when monotone progress stalls. This is a mode of ConvergenceGovernor in the same sense that hard, soft, and ranked are modes of CompetitiveSelection, not a new primitive.
+
+Adversarial pass summary: eight domains, one new primitive (Checkpoint), one new mode (widening on ConvergenceGovernor), one explicit invariant (monotonicity on ResourceRegistry). Six of eight fit the original set with no change. The final primitive count is seventeen. Three of the eight adversarial domains (CLP, theorem proving, lattice dataflow) also suggest that the existing primitive set was underdetermined in specific ways that have now been sharpened. The adversarial pass therefore strengthens rather than weakens the methodology: a primitive set that survives domains outside its original design sample with a single addition is more credible than one that claims to cover every possible domain.
+
+A methodological note: the adversarial pass was conducted after review of the twelve-domain original set. This means the primitives examined during the adversarial pass were those already produced by the original collapse, and the question being asked was "does this set of primitives express this domain." The stronger version of this test, in which a researcher unfamiliar with the primitive set applies DAC to a new domain and independently discovers the same or a different primitive set, remains important future work and is listed in Section 9.5.
 
 ---
 
@@ -391,15 +496,15 @@ Machine Learning (see Section 6 for the extended analysis):
 
 The domain-specific vocabulary that makes abstraction collapse difficult to detect is not accidental. It evolved because the people solving each problem came from that domain. Graphics engineers built rendering systems and named their concepts in rendering vocabulary. Network engineers built routing protocols and named their concepts in networking vocabulary. Machine learning researchers built training frameworks and named their concepts in statistical learning vocabulary.
 
-Each vocabulary is internally coherent and useful within its domain. The problem is that vocabulary creates cognitive boundaries. A graphics engineer who thinks in terms of "visibility buffers" and "deferred shading" does not spontaneously recognize that these are instances of the same evaluate-then-actuate pattern that governs Kubernetes pod scheduling. A machine learning researcher who thinks in terms of "attention" and "softmax" does not spontaneously recognize that the attention mechanism is a competitive selection pass with a soft winner function, the same structural primitive that determines which triangle owns each pixel in the visibility buffer.
+Each vocabulary is internally coherent and useful within its domain. The problem is that vocabulary creates cognitive boundaries. A graphics engineer who thinks in terms of visibility buffers and deferred shading does not spontaneously recognize that these are instances of the same evaluate-then-actuate pattern that governs Kubernetes pod scheduling. A machine learning researcher who thinks in terms of attention and softmax does not spontaneously recognize that the attention mechanism is a competitive selection pass with a soft winner function, the same structural primitive that determines which triangle owns each pixel in the visibility buffer.
 
 The vocabulary is a lens that focuses attention on domain-specific details and defocuses the structural similarity to other domains. Removing the lens requires deliberately stripping the domain words and looking at what remains. This is uncomfortable because domain expertise feels diminished when its specialized vocabulary turns out to be a renaming of something generic. But the generic version is more powerful precisely because it composes across domains.
 
 ### 3.2 The Specialization Trap
 
-Software engineering culture rewards specialization. "Rendering engineer" and "systems engineer" and "ML engineer" are different job titles, different conference communities, different publication venues. Solutions published at SIGGRAPH use rendering vocabulary. Solutions published at NSDI use networking vocabulary. Solutions published at NeurIPS use ML vocabulary. Cross-pollination happens, but it happens through analogy ("attention is like a soft dictionary lookup") rather than through structural identification ("attention IS competitive selection with a specific scoring function").
+Software engineering culture rewards specialization. Rendering engineer, systems engineer, and ML engineer are different job titles, different conference communities, and different publication venues. Solutions published at SIGGRAPH use rendering vocabulary. Solutions published at NSDI use networking vocabulary. Solutions published at NeurIPS use ML vocabulary. Cross-pollination happens, but it happens through analogy ("attention is like a soft dictionary lookup") rather than through structural identification ("attention is competitive selection with a specific scoring function").
 
-Analogy preserves the domain boundary. Structural identification dissolves it. Dissolution is more useful but less comfortable, because it implies that the domain boundary was never real, that the specialization was, to a significant degree, vocabulary.
+Analogy preserves the domain boundary. Structural identification dissolves it. Dissolution is more useful but less comfortable, because it implies that the domain boundary was never real — that the specialization was, to a significant degree, vocabulary.
 
 ### 3.3 Why It Took an Outsider
 
@@ -407,9 +512,9 @@ DAC was not developed by a rendering engineer, a networking engineer, or an ML r
 
 The attempt to build a better execution engine began with modeling it after an OS kernel (the best-understood solution to resource governance), an OSI stack (the best-understood solution to layered abstraction), and Unix pipes (the best-understood solution to composable data flow). These were not novel intellectual ingredients. They were proven patterns applied to a domain that had been ignoring them.
 
-The key enabler was the absence of domain expertise. An experienced rendering engineer would have built a rendering engine. An experienced orchestration engineer would have built an orchestration engine. Someone who was looking for proven solutions to each problem they encountered, without the vocabulary to know which domain "owned" each solution, ended up finding the same solution appearing across every domain. The collapse was visible precisely because no domain-specific lens was filtering the view.
+The key enabler was the absence of domain expertise. An experienced rendering engineer would have built a rendering engine. An experienced orchestration engineer would have built an orchestration engine. Someone looking for proven solutions to each problem they encountered, without the vocabulary to know which domain "owned" each solution, ended up finding the same solution appearing across every domain. The collapse was visible precisely because no domain-specific lens was filtering the view.
 
-This is not an argument against domain expertise. The domain function (the rendering equation, Newton's laws, the attention scoring function) requires deep domain knowledge to design. The argument is that the execution infrastructure around the domain function is generic, and domain expertise in execution infrastructure creates the illusion that it is not.
+This is not an argument against domain expertise. The domain function (the rendering equation, the attention scoring function, the constraint propagation rule) requires deep domain knowledge to design. The argument is that the execution infrastructure around the domain function is generic, and domain expertise in execution infrastructure creates the illusion that it is not.
 
 ---
 
@@ -417,13 +522,13 @@ This is not an argument against domain expertise. The domain function (the rende
 
 ### 4.1 The Overcounting Problem
 
-In the original formulation of the abstraction primitive set, a single primitive called "SlotArbitrationPass" was mapped to over seventeen domain patterns: visibility buffers, attention, pod scheduling, market order matching, alert triage, beam search, leader election, broad-phase collision, BGP path selection, speculative decoding, audio priority, and more. When one primitive absorbs that many structurally different operations, it raises a legitimate concern: is the primitive defined so broadly ("anything where something competes for something") that it approaches the Turing Tarpit the methodology claims to avoid?
+In an earlier formulation of the abstraction primitive set, a single primitive called SlotArbitrationPass was mapped to over seventeen domain patterns: visibility buffers, attention, pod scheduling, market order matching, alert triage, beam search, leader election, broad-phase collision, BGP path selection, speculative decoding, audio priority, and more. When one primitive absorbs that many structurally different operations, it raises a legitimate concern: is the primitive defined so broadly ("anything where something competes for something") that it approaches the Turing Tarpit the methodology claims to avoid?
 
 The answer is that there is genuine shared structure here, but it is a family of related primitives rather than a single primitive. The shared structure is: given a set of output positions (seats) and a set of candidates, evaluate each candidate against each seat using a scoring function, and allocate candidates to seats based on the scores. What differs across the family members, and what matters operationally, is the selection mechanism.
 
 ### 4.2 Three Selection Modes
 
-The Competitive Selection family decomposes into three distinct selection modes that share the scoring interface but differ in their allocation semantics:
+The Competitive Selection family decomposes into three distinct selection modes that share the scoring interface but differ in allocation semantics:
 
 Hard Selection (argmax): exactly one winner per seat. The candidate with the highest score takes the seat exclusively. All other candidates receive nothing. This is the mode used in pixel ownership (visibility buffer), leader election (RAFT), pod scheduling, market order matching, and BGP path selection. The key property is mutual exclusion: a seat is owned by exactly one candidate.
 
@@ -435,7 +540,7 @@ Ranked Selection (top-k): the top K candidates by score are all allocated. This 
 
 All three modes require a scoring function that evaluates candidate-seat affinity. All three produce an AllocationRecord that maps seats to their allocated candidates. All three compose with ActuationPass (which operates on the allocation result) and with Budget\<U\> (which constrains the total allocation). All three can be governed by the same audit and observability infrastructure.
 
-The differences (hard vs. soft vs. ranked) are parameterizations of the selection mechanism, not entirely different primitives. This is analogous to how a sorting algorithm's comparison function is parameterized: quicksort-by-price and quicksort-by-date are the same algorithm with different comparison functions, not two different algorithms. Similarly, hard competitive selection and soft competitive selection are the same structural primitive with different allocation semantics.
+The differences (hard, soft, ranked) are parameterizations of the selection mechanism, not entirely different primitives. This is analogous to how a sorting algorithm's comparison function is parameterized: quicksort-by-price and quicksort-by-date are the same algorithm with different comparison functions, not two different algorithms. Similarly, hard competitive selection and soft competitive selection are the same structural primitive with different allocation semantics.
 
 The trait signature in Section 2.3 accommodates all three modes through the AllocationRecord return type: hard selection returns a one-to-one map, soft selection returns a weighted distribution, and ranked selection returns a one-to-many map with a bounded fan-out. The scoring interface is identical.
 
@@ -459,27 +564,29 @@ The methodology described in Section 1.2 is framed as analytical: take existing 
 
 The generative application works as follows. When confronted with a problem that appears hard in its domain:
 
-1. Strip the domain vocabulary from the problem statement. Describe what the problem actually requires structurally, without using any domain-specific terms.
+1. Strip the domain vocabulary from the problem statement. Describe what the problem actually requires structurally, without using domain-specific terms.
 
 2. Map the stripped problem to the abstraction primitive set. Does the structure match any known primitive or composition of primitives?
 
 3. If the mapping succeeds, the problem inherits the solution from whichever domain already solved it. The "hard problem" was hard because its domain vocabulary obscured its structural identity with a solved problem.
 
-4. If the mapping fails, you have found a genuinely novel computational structure. This is also valuable, because it identifies where real innovation is needed versus where vocabulary was creating the illusion of novelty.
+4. If the mapping fails, the result is a genuinely novel computational structure. This is also valuable, because it identifies where real innovation is needed versus where vocabulary was creating the illusion of novelty.
 
 The implementation application extends this further. Any computation described in domain-specific notation (a mathematical formula, a protocol diagram, an algorithm in pseudocode) can be decomposed into a build plan by stripping the notation and mapping each step to the primitive set. The notation describes the relationship between inputs and outputs. The DAC decomposition describes the computational steps a machine actually executes, which are always some combination of traversal, transformation, reduction, propagation, budgeting, sampling, and gating. The notation is the spec. The decomposition is the architecture.
 
-This is the difference between a taxonomy and a tool. A taxonomy organizes what exists. A generative methodology lets you build things you could not see before.
+This is the difference between a taxonomy and a tool. A taxonomy organizes what exists. A generative methodology lets one build things one could not see before.
 
 ### 5.2 Case Study: LeanFormer
 
-LeanFormer is a novel transformer architecture designed entirely through DAC. Rather than starting from the ML literature and making incremental improvements to existing architectures, the design started by stripping the ML vocabulary from six open problems in neural network design and mapping each to the abstraction primitive set. In every case, the stripped problem turned out to be a solved problem from systems engineering. The first five problems address the model architecture. The sixth addresses the training process itself.
+LeanFormer is a novel transformer architecture designed through DAC. Rather than starting from the ML literature and making incremental improvements to existing architectures, the design began by stripping ML vocabulary from six open problems in neural network design and mapping each to the abstraction primitive set. In every case, the stripped problem turned out to be a solved problem from systems engineering. The first five problems address the model architecture. The sixth addresses the training process itself.
 
-The entire arc from initial DAC decomposition to 204M-parameter validated results took approximately three weeks. The initial proof-of-concept (7.5M parameters, 4 layers) was designed and implemented in 24 hours using DAC as the design methodology and Claude Code as the implementation agent. The architect provided the DAC decomposition, the cross-domain mappings, and the verification discipline. Claude Code produced all implementation code. No ML-specific implementation experience was required on either side of this collaboration; the solutions were systems engineering solutions recognized through vocabulary stripping.
+The entire arc from initial DAC decomposition to 204M-parameter validated results took approximately three weeks. The initial proof-of-concept (7.5M parameters, 4 layers) was designed and implemented in 24 hours using DAC as the design methodology and an AI coding assistant (Claude Code) as the implementation agent. The architect provided the DAC decomposition, the cross-domain mappings, and the verification discipline. The coding assistant produced implementation code. No ML-specific implementation experience was required on either side of this collaboration; the solutions were systems engineering solutions recognized through vocabulary stripping.
 
-Subsequent scale-up to 39M parameters (76M dense equivalent, trained on 500K OpenWebText samples) validated the architectural thesis across 119 tests. A 204M parameter model (805M dense equivalent) was trained with the full governed pipeline on a reasoning corpus for 7,228 optimizer steps (one epoch) on an NVIDIA L4 GPU. The architectural results reported in Sections 5.3-5.7 are from the 39M validation. The training governance results reported in Section 5.8 include both the 4.8M preliminary validation and the 204M scale validation. The 204M run is the first validation of all sixteen primitives composing correctly under real training conditions at a scale where parameter group ratios are representative (L0 at approximately 41.5% of parameters, compared to approximately 86% at 4.8M where the embedding table dominates).
+The role of the AI coding assistant deserves direct acknowledgment. The three-week development time is evidence for DAC's claim that recognized problems have short implementation paths, but it also reflects the productivity of AI-assisted coding. The mitigation against the "plausible-looking code against plausible-looking specifications" failure mode is explicit: hostile audit protocols (requiring log evidence rather than diff evidence), formal specifications in TLA+ that the implementation must refine, and a 204M-parameter training run in which the governance invariants were continuously measured. A specification bug or an implementation bug would have shown up either as a TLC counterexample or as a governance invariant violation during training. Neither occurred in the governance layer. One occurred in a domain function (the B=0 initialization threshold, discussed in Section 5.8.1), which is precisely the class of bug the structure/function separation predicts will remain in the domain function rather than the primitive.
 
-LeanFormer is not presented as a competitive language model. It is presented as evidence of what DAC produces when applied to a domain: a novel architecture that composes four efficiency mechanisms simultaneously (low-rank compression, sparse attention, gated feed-forward, adaptive depth), solves catastrophic forgetting by construction (bit-for-bit base weight restoration), makes confabulation architecturally detectable, and governs the entire training lifecycle with the same primitives that govern the model's architecture. The ML community has spent years developing each of these capabilities in isolation, each within ML vocabulary. DAC composed them in weeks by recognizing that they are all instances of primitives that systems engineering solved decades ago. The limitations of the current implementation (modest scale, single-epoch training, non-functional subsystems) are training configuration issues, not architectural failures, and they are identified as concrete next steps in Section 9.5.
+Subsequent scale-up to 39M parameters (76M dense equivalent, trained on 500K OpenWebText samples) validated the architectural thesis across 119 tests. A 204M parameter model (805M dense equivalent) was trained with the full governed pipeline on a reasoning corpus for 7,228 optimizer steps (one epoch) on an NVIDIA L4 GPU. The architectural results reported in Sections 5.3–5.7 are from the 39M validation. The training governance results reported in Section 5.8 include both a 4.8M preliminary validation and the 204M scale validation. The 204M run is the first validation of all seventeen primitives composing correctly under real training conditions at a scale where parameter group ratios are representative (L0 at approximately 41.5% of parameters, compared to approximately 86% at 4.8M where the embedding table dominates).
+
+LeanFormer is not presented as a competitive language model. It is presented as evidence of what DAC produces when applied to a domain: a novel architecture that composes four efficiency mechanisms simultaneously (low-rank compression, sparse attention, gated feed-forward, adaptive depth), solves catastrophic forgetting by construction (bit-for-bit base weight restoration), makes confabulation architecturally detectable, and governs the entire training lifecycle with the same primitives that govern the model's architecture. The ML community has developed each of these capabilities in isolation, each within ML vocabulary. DAC composed them by recognizing that they are all instances of primitives from other domains. The limitations of the current implementation (modest scale, single-epoch training, non-functional subsystems) are training configuration issues, not architectural failures, and they are identified as concrete next steps in Section 9.5.
 
 ### 5.3 Problem 1: Parameter Inefficiency
 
@@ -534,7 +641,7 @@ Result at 39M parameters: 64% of 100 beliefs retained improvement when all were 
 
 ### 5.7 Problem 5: Confabulation
 
-In ML vocabulary: language models generate confident-sounding text that is factually wrong because they have no mechanism to distinguish "I know this" from "this is a plausible continuation." Hallucination mitigation is one of the most active areas of current research.
+In ML vocabulary: language models generate confident-sounding text that is factually wrong because they have no mechanism to distinguish "I know this" from "this is a plausible continuation." Hallucination mitigation is an active area of current research.
 
 Stripped of vocabulary: a system that produces output with no confidence signal and no mechanism to distinguish cached retrieval (recalling a stored fact) from interpolation (generating a plausible response from patterns). Any system that conflates these two modes will produce confident-looking interpolations where retrieval was expected. This is the error-detection problem in signal processing, solved by separating the data path from the confidence path.
 
@@ -570,19 +677,15 @@ The training system extends DAC beyond the model to the model's entire lifecycle
 
 Preliminary result at 4.8M parameters (300-step validation run): all governance components activated and composed correctly. Per-group convergence governors produced 15 state transitions across 8 parameter groups, with 7 reaching CONVERGED state. The quality hierarchy activated in the predicted order: L0 (structural) then L1 (representational) then L2 (refinement) then L3 (specialization), all via convergence signal with no emergency activation required. The FederatedBudget invariant (sum of allocations <= master budget) held for all 300 steps with zero violations. The gradient router achieved 15.4% selectivity post-warmup. The SHA-256-chained audit log verified across all 300 records. The change-triggered evaluation pipeline fired 7 targeted evaluations on convergence signals. Final loss was within +2.4% of baseline, with the gap narrowing throughout training (from +3.17 at step 50 to +0.15 at step 299).
 
-Scale validation at 204M parameters (805M dense equivalent, 7,228 optimizer steps, one epoch on a reasoning corpus, NVIDIA L4 GPU, 140.9 hours wall clock) confirmed that all sixteen primitives compose correctly under real training conditions. The question being answered here is not "how good is this language model" but "do the governance primitives compose correctly at a scale where parameter group ratios are representative, and do all invariants hold across thousands of training steps?" The language modeling metrics are reported for completeness but are not the subject of evaluation. The governance results:
+Scale validation at 204M parameters (805M dense equivalent, 7,228 optimizer steps, one epoch on a reasoning corpus, NVIDIA L4 GPU, 140.9 hours wall clock) confirmed that all seventeen primitives compose correctly under real training conditions. The question being answered here is not "how good is this language model" but "do the governance primitives compose correctly at a scale where parameter group ratios are representative, and do all invariants hold across thousands of training steps?" The language modeling metrics are reported for completeness but are not the subject of evaluation. The governance results:
 
 The FederatedBudget invariant (sum of allocations <= 1.0) held for all 722 audit records with zero violations. Budget adapted dynamically throughout training: L0 groups started at 0.25 each, converged groups dropped to as low as 0.012, and active groups received up to 0.40 of the total budget. The budget reallocation tracked learning need in real time.
 
-The convergence governor four-state machine produced 18 total state transitions across 8 parameter groups, all valid (Figure 3): PENDING to ACTIVE (3 transitions), ACTIVE to COOLING (8), COOLING to CONVERGED (4), and COOLING to ACTIVE (1 regression, discussed below). No states were skipped. Final states: embeddings COOLING, attention_routing CONVERGED, gates CONVERGED, layer_norms CONVERGED, attention_output COOLING, ff_projections COOLING, output_head COOLING, exit_classifier CONVERGED.
+The convergence governor four-state machine produced 18 total state transitions across 8 parameter groups, all valid: PENDING to ACTIVE (3 transitions), ACTIVE to COOLING (8), COOLING to CONVERGED (4), and COOLING to ACTIVE (1 regression, discussed below). No states were skipped. Final states: embeddings COOLING, attention_routing CONVERGED, gates CONVERGED, layer_norms CONVERGED, attention_output COOLING, ff_projections COOLING, output_head COOLING, exit_classifier CONVERGED.
 
-![Figure 3: Convergence Governor State Timeline (204M Training Run). Per-group state evolution across all 7,228 optimizer steps. L0 groups (embeddings, attn_routing, gates, layer_norms) enter ACTIVE at step 0 and reach COOLING or CONVERGED during the run. L1 groups (attention_output, ff_projections) and L2 (output_head) enter ACTIVE on hierarchy activation; L3 (exit_classifier) enters at step 2,773 via genuine convergence. The attention_output self-correction (COOLING to ACTIVE) after the B=0 artifact is marked. No skipped states across 18 transitions.](figures/figure3_governor_timeline.png)
+The SHA-256 hash-chained audit log maintained integrity across all 722 records from step 10 to step 7,220, with zero chain breaks. Every governance decision (budget allocation, convergence state transition, hierarchy activation, gradient routing update) is traceable to a specific training step with tamper-evident provenance.
 
-The SHA-256 hash-chained audit log maintained integrity across all 722 records from step 10 to step 7,220, with zero chain breaks. Every governance decision (budget allocation, convergence state transition, hierarchy activation, gradient routing update) is traceable to a specific training step with tamper-evident provenance. The full audit log and training metrics are published alongside this paper in `docs/dac/artifacts/204m_run/`.
-
-Best validation perplexity reached 57.6 at step 2,000, with train loss declining from 10.39 to 1.64 across the full run (Figure 1). Severe overfitting occurred after step 2,000 (validation perplexity rose from 57.6 to 1,463.9 by step 7,228), which is expected behavior from single-epoch training with limited regularization (dropout 0.1 only). The overfitting is a training configuration limitation, not an architectural failure, and critically, all governance invariants held throughout the overfit phase: the budget was never exceeded, the hierarchy ordering was maintained, the convergence governor never skipped a state, and the audit chain was never broken. Governance correctness is independent of generalization quality, exactly as the structure/function separation predicts.
-
-![Figure 1: 204M LeanFormer Training Dynamics with Hierarchy Activation. Train loss (blue) declines monotonically from 10.39 to 1.64. Validation perplexity (red) reaches 57.6 at step 2,000 and then diverges — single-epoch training with dropout 0.1 as only regularization. Shaded bands mark the active hierarchy levels (L0, L0+L1 from step 200, L0+L1+L2 from step 400, all levels from step 2,773). The L1 and L2 activations at round-number steps are the B=0 initialization artifact; the L3 activation at step 2,773 is genuine post-learning convergence.](figures/figure1_training_dynamics.png)
+Best validation perplexity reached 57.6 at step 2,000, with train loss declining from 10.39 to 1.64 across the full run. Severe overfitting occurred after step 2,000 (validation perplexity rose from 57.6 to 1,463.9 by step 7,228), which is expected behavior from single-epoch training with limited regularization (dropout 0.1 only). The overfitting is a training configuration limitation, not an architectural failure, and critically, all governance invariants held throughout the overfit phase: the budget was never exceeded, the hierarchy ordering was maintained, the convergence governor never skipped a state, and the audit chain was never broken. Governance correctness is independent of generalization quality, exactly as the structure/function separation predicts.
 
 Orthogonal capacity measurement confirmed 53,760 available dimensions across 20 layers (2,688 per layer), with a theoretical maximum of 3,360 rank-16 knowledge deltas. This was measured on two independent machines (NVIDIA L4 on GCP, RTX 3060 locally) with identical results, confirming the measurement is model-intrinsic.
 
@@ -596,9 +699,7 @@ The most instructive result from the 204M training run was an unplanned demonstr
 
 LeanFormer's low-rank layers initialize B matrices to zero (following standard LoRA practice), which means all parameter groups begin with near-zero gradient flow regardless of whether they have received meaningful training signal. The convergence governors correctly detected low gradient EMA and transitioned through the state machine as specified: ACTIVE to COOLING after the configured cooling window. This produced hierarchy activations at steps 200 (L1) and 400 (L2), both at round-number intervals aligned with the cooling window configuration. Loss remained flat at 10.388 through both activations. Actual training progress began only when the output head activated at L2 and introduced significant gradient flow through the network.
 
-The L3 activation at step 2,773 was qualitatively different. It occurred at a non-round step number, after the attention_output and ff_projections groups (L1 parameters) had received 2,300+ steps of real gradient flow following the output head's activation at step 400. The convergence governor's decision to activate L3 was based on genuine post-learning convergence in those groups, not a calibration artifact. This distinction is visible in the gradient norm data (Figure 2): at step 400, the output head's gradient norm jumped from 0.0 to 0.88 in a single step, marking the onset of real learning, and L3 activation occurred only after the downstream groups had processed that gradient signal through thousands of training steps.
-
-![Figure 2: Gradient Norm by Parameter Group. log10 of gradient norm per parameter group across the run. The left region (steps 10 to 400) is the B=0 artifact region where all groups show near-zero gradient flow regardless of training signal. The dashed line at step 400 marks the onset of real learning, when the output head activates and its gradient norm jumps from 0.0 to 0.88 in a single step. From step 500 onward the L1 and L2 groups show sustained gradient activity; the exit_classifier (L3) activates at step 2,773 after 2,300+ steps of real gradient flow through the downstream groups. The embeddings and attention_routing groups remain at ~1e-7 to 1e-8 throughout — near zero, but their COOLING/CONVERGED transitions are correctly gated on peak-observed gradient, not raw magnitude.](figures/figure2_gradient_heatmap.png)
+The L3 activation at step 2,773 was qualitatively different. It occurred at a non-round step number, after the attention_output and ff_projections groups (L1 parameters) had received 2,300+ steps of real gradient flow following the output head's activation at step 400. The convergence governor's decision to activate L3 was based on genuine post-learning convergence in those groups, not a calibration artifact. This distinction is visible in the gradient norm data: at step 400, the output head's gradient norm jumped from 0.0 to 0.88 in a single step, marking the onset of real learning, and L3 activation occurred only after the downstream groups had processed that gradient signal through thousands of training steps.
 
 The COOLING to ACTIVE regression observed in the attention_output group provides further evidence of the governor's robustness. This group was prematurely cooled by the B=0 artifact, then reactivated when real gradient flow from the output head pushed its EMA above the cooling threshold. The four-state machine self-corrected from the calibration issue without any intervention, using the existing COOLING to ACTIVE transition path. This hysteresis behavior is exactly what the state machine was designed to provide.
 
@@ -608,7 +709,7 @@ The fix follows mechanically from the cross-domain pattern: a phase-aware Conver
 
 This episode demonstrates three properties of the methodology simultaneously. First, the structure/function separation that DAC claims: the governance machinery was correct (the ConvergenceGovernor followed its specification exactly), while the domain function (the cooling threshold applied to B=0-initialized parameters) was miscalibrated. The governance code requires one additional precondition; the primitive itself does not change. Second, DAC's generative mode: the fix was not invented from scratch but recognized as a solved problem from the collapse table, where observational degeneracies are routinely resolved by adding a disambiguation signal. Third, the value of formal verification: the phase-aware fix was verified in TLA+ before any code was written, and the original failure was reproduced as a concrete counterexample, providing high confidence that the fix addresses the root cause.
 
-This is a machinery validation, not a scale validation. The efficiency gains from governed training (estimated 50-70% gradient compute reduction from hierarchical activation and gradient routing) depend on model size and training duration. At 204M parameters, the governance machinery correctly identified which parameter groups to stop training and dynamically reallocated budget to groups still learning. However, the compute savings were not realized as wall-clock improvement in this run because the implementation zeros gradients for converged groups after computation rather than skipping the backward pass entirely. Implementing actual compute skipping for governed groups (setting requires_grad=False with proper autograd graph pruning) is an engineering optimization for future runs. The governance produced the correct signal; the training loop did not yet act on it efficiently.
+This is a machinery validation, not a scale validation. The efficiency gains from governed training depend on model size and training duration. At 204M parameters, the governance machinery correctly identified which parameter groups to stop training and dynamically reallocated budget to groups still learning. However, the compute savings were not realized as wall-clock improvement in this run because the implementation zeros gradients for converged groups after computation rather than skipping the backward pass entirely. Implementing actual compute skipping for governed groups (setting requires_grad=False with proper autograd graph pruning) is an engineering optimization for future runs. The governance produced the correct signal; the training loop did not yet act on it efficiently.
 
 ### 5.9 Summary of Results
 
@@ -642,7 +743,7 @@ Architecture results are from the 39M parameter model (76M dense equivalent) tra
 
 The two partial results (adaptive depth and tiered sampling) are not architectural failures. Adaptive depth requires either a lower exit threshold or explicit layer-dropping training to learn meaningful early-exit behavior; the 39M model showed limited depth variation (11.3/12 mean exit depth) and the 204M model showed none (20/20 throughout). Tiered sampling scored all samples at initialization when the model could not yet evaluate difficulty; periodic re-scoring during training would enable the governed data pipeline.
 
-The training governance results validate that all sixteen primitives compose correctly at 204M parameters and that all governance invariants hold empirically across 7,228 training steps, including through the severe overfitting phase after step 2,000. The B=0 observational degeneracy was diagnosed using DAC's own methodology and the fix was formally verified in TLA+. The language modeling perplexity is not competitive at this scale and training duration; the claim is governance machinery validation, not language modeling performance.
+The training governance results validate that all seventeen primitives compose correctly at 204M parameters and that all governance invariants hold empirically across 7,228 training steps, including through the severe overfitting phase after step 2,000. The B=0 observational degeneracy was diagnosed using DAC's own methodology and the fix was formally verified in TLA+. The language modeling perplexity is not competitive at this scale and training duration; the claim is governance machinery validation, not language modeling performance.
 
 The critical open question is whether the governed training machinery produces measurable efficiency gains at larger scale. The governance correctly identified which parameter groups to stop training and reallocated budget accordingly, but the compute savings were not realized as wall-clock improvement in this run. Validating the efficiency claims requires a 7B+ parameter training run with proper compute skipping for converged groups, multi-epoch training with adequate regularization, and comparison against an ungoverned baseline. This is identified as necessary future work in Section 9.5.
 
@@ -652,37 +753,139 @@ DAC does not design domain functions. The specific choice of low-rank factorizat
 
 This is the same structure/function separation described throughout the paper. The abstraction primitives provide structure (how data flows, how resources are allocated, how convergence is detected, how mutations are audited). The domain provides function (what computation to apply at each step). Neither replaces the other.
 
+
 ---
 
-## 6. Extended Case Study: The AI Domain
+## 6. Case Study: Orkestratum, A Multi-Domain Runtime on the Primitive Set
 
-### 6.1 The Deepest Collapse
+### 6.1 What Orkestratum Is
 
-The most striking result of applying DAC to machine learning is the discovery that the transformer architecture [2], the foundation of every modern large language model, is a composition of primitives that the methodology had already identified before the AI domain was examined.
+LeanFormer is the paper's evidence that DAC is useful when applied to a single domain. Orkestratum is the paper's evidence that DAC produces a runtime that serves multiple domains simultaneously without per-domain engine work. The methodology's central claim is that twelve domains were the same computation in different vocabulary. The strongest form of that claim is a single codebase that runs all of them. Orkestratum is that codebase.
+
+Orkestratum is an application runtime organized as a kernel of primitive modules plus sandboxed domain modules. The kernel contains one implementation of each of the seventeen primitives, one DAG scheduler that routes every execution through a single dispatch path, and one audit chain that records every governance decision. Domain modules plug into the kernel by providing the domain functions (scoring functions, task functions, transfer functions) that parameterize the primitives. Four workload classes run on this runtime today:
+
+- Security orchestration playbooks (SOAR),
+- Continuous integration and deployment pipelines (CI/CD),
+- Extract-transform-load pipelines (ETL),
+- Configuration management runs,
+
+and a fifth, the real-time renderer, runs inside the same runtime with the same primitives driving real-time graphics workloads.
+
+The claim is concrete: one kernel, one scheduler, one audit chain, one budget system, one convergence governor implementation, one traversal engine. The four DAG-workload domains are different compositions of these modules with domain-specific task functions. The renderer is a different composition of the same modules with domain-specific scoring functions (depth testing, culling predicates, light propagation kernels). No domain has its own scheduler, its own budget, or its own audit implementation. A primitive-bypass CI gate prevents new code from sidestepping the kernel.
+
+### 6.2 What Is Demonstrated, What Is In Progress
+
+The claims in this section are bounded to what the Orkestratum codebase currently demonstrates. The runtime is an active engineering program, not a finished system, and this section is explicit about which capabilities are production-validated, which are validated at prototype quality, and which are in-progress work.
+
+Demonstrated:
+
+- One kernel codebase implements all seventeen primitives as trait-dispatched modules. A conformance audit has mapped every primitive to its implementation site, its invariant, and its trace. Phases of this refactor are committed against an executable blueprint with per-primitive exit criteria.
+- Rendering workloads run through the kernel at interactive frame rates. Sponza scene benchmark data has been collected pre-consolidation; further throughput gains from the primitive consolidation are in progress.
+- DAG workload execution is mediated entirely by the scheduler: SOAR playbooks, CI/CD pipelines, ETL workflows, and configuration-management runs all route through the same dispatch path. The absolute invariant "all execution routes through the DAG" is enforced by a machine-checked TLA+ specification (AllExecutionThroughDag.tla).
+- A SHA-256 hash-chained AuditSink records every mutation across all workload classes. The chain is verified in tests and its integrity has been maintained across the 204M LeanFormer training run (722 records, zero chain breaks) as well as in runtime operation.
+- Formal specifications of the primitives and key compositions exist in TLA+. The formal verification program is underway, with per-primitive refinement specifications scheduled as a dedicated phase of the engineering blueprint.
+
+In progress:
+
+- Performance consolidation to hit demonstration targets for rendering (target: Sponza at 100+ FPS, Bistro at interactive frame rates).
+- Ongoing refactor of hand-rolled structures in the codebase to route through the L0 primitive trait surface rather than through local reimplementations. A conformance audit identified specific violations with line-number traces; remediation is scheduled against an executable plan.
+- Byzantine fault tolerance for federated authorities is documented as an extension path but not implemented; current federation uses crash-fault tolerance (RAFT).
+- Scene composition (interactive multi-participant worlds) is a proposal document dependent on the completion of earlier refactor phases; it is not yet implemented.
+
+Not claimed:
+
+- Orkestratum is not claimed to match domain-specialized tools on their benchmarks today. A dedicated graphics engine optimized for a single scene will outperform Orkestratum's renderer on that scene. A purpose-built SOAR platform will have a larger plugin ecosystem. The claim is that one runtime serves these domains with the same primitives, not that the runtime currently dominates the best-of-breed per domain.
+- Orkestratum is not claimed to be feature-complete relative to any of the four DAG workload domains. Each has a working execution path; feature parity with Ansible or Airflow in every edge case is not yet achieved.
+- The renderer is not claimed to be a frontier research renderer. It is a real-time renderer built on the primitive set sufficient to demonstrate that the primitives work under real-time constraints.
+
+### 6.3 The Primitive-to-Domain Mapping in the Runtime
+
+The following table documents how the seventeen primitives are instantiated in each of the five domains currently running on Orkestratum. The table is a runtime-level view: it shows how a single primitive serves multiple domains by being parameterized with different domain functions, not by being reimplemented per domain.
+
+| Primitive | SOAR | CI/CD | ETL | Config Mgmt | Rendering |
+|---|---|---|---|---|---|
+| Budget\<U\> | Playbook compute | Build compute | Pipeline compute | Run compute | Draw calls, GPU memory, microseconds |
+| FederatedBudget\<U\> | Per-tenant allocation | Per-team allocation | Per-warehouse allocation | Per-inventory allocation | Per-pass GPU allocation |
+| QualityHierarchy | Severity tiers | Build priority tiers | Data freshness tiers | Desired-state tiers | LOD tiers |
+| AllocationSnapshot | Playbook activation state | Stage activation state | Task activation state | Role activation state | Per-frame LOD assignment |
+| RelationshipGraph | Playbook DAG | Pipeline DAG | Transform DAG | Role/task DAG | Render pass graph |
+| ResourceRegistry | Action catalog | Tool catalog | Source/sink catalog | Host inventory | Asset/material catalog |
+| TraversalEngine | Playbook execution | Pipeline execution | Pipeline execution | Task execution | Frustum culling, visibility traversal |
+| PropagationPass | State propagation | Artifact propagation | Data propagation | State convergence | Cascade shadows, GI |
+| CompetitiveSelection | Alert triage (ranked) | Runner allocation (hard) | Source selection (hard) | Conflict resolution (hard) | Pixel ownership (hard), LOD pick (ranked) |
+| ActuationPass | Response action | Stage execution | Transform/load | Task apply | GPU command submission |
+| Reduction | Alert aggregation | Test result aggregation | Reduce-phase aggregation | State aggregation | Draw call batching |
+| Sampler | Randomized test sampling | Test partition | Row sampling | Dry-run probing | TAA jitter, importance sampling |
+| Checkpoint | Rollback on failed action | Rollback on failed stage | Rollback on failed load | Rollback on failed task | (not used in rendering) |
+| ConvergenceGovernor | (not typically used) | (not typically used) | Pipeline convergence | Desired-state convergence | Physics constraint solving |
+| Signal\<T\> | Alert arrival | Build trigger | Data arrival | State change | Render pass completion |
+| RateLimit | API throttling | Build queue pacing | Source throttling | Remote host pacing | Frame rate cap |
+| AuditSink | Every action | Every build step | Every transform | Every apply | Every render decision (optional) |
+
+The table is the strongest test of DAC's central claim. If the methodology were vocabulary-matching dressed up as structural insight, each domain would require its own implementations of these primitives because the domain constraints would differ in ways the primitives could not absorb. Instead, each primitive serves all five domains with the same code, parameterized by the domain's scoring function or task function.
+
+### 6.4 The DAG Workload Collapse, Empirically
+
+Section 7 of this paper argues that CI/CD pipelines, ETL workflows, configuration management, and SOAR playbooks are structurally identical: DAG traversal under budget constraints with capability-gated I/O. Orkestratum's architecture is the empirical form of this claim. All four domains dispatch through the same scheduler, traverse the same RelationshipGraph trait, consume the same Budget, emit to the same AuditSink, and compose with the same reconciler primitives (SuperviseReconciler, EventDrivenReconciler, ScheduledReconciler, TickReconciler), each of which is itself a specific composition of Budget, RateLimit, Signal, Sampler, and ActuationPass.
+
+What the runtime demonstrates that the paper's analytical table cannot: that the same execution engine serves all four domains without accumulating domain-specific cruft over time. A key CI gate in the project forbids new code from bypassing the primitive kernel, which operationalizes the structural claim as an ongoing invariant rather than a one-time analysis.
+
+The rendering pipeline is the crucial additional evidence. Rendering is the domain with the tightest performance constraints in the full set: every frame has a fixed millisecond budget, and any overhead from abstraction is immediately visible. If the primitive set survived contact with real-time rendering at interactive frame rates, the objection "this abstraction is too general to be efficient" loses force. The rendering pipeline is running inside the same runtime that executes the DAG workloads, using the same primitive implementations. It is not a separate engine bolted onto a general-purpose runtime. It is the general-purpose runtime driving real-time graphics.
+
+### 6.5 The Formal Verification Program
+
+Orkestratum's formal verification program treats TLA+ specifications as the source of truth for the primitive layer. Each primitive has (or will have, per the blueprint) a refinement specification that its implementation must satisfy. Composition specifications verify invariants across primitive boundaries. A top-level invariant (AllExecutionThroughDag) enforces that no side channel can bypass the scheduler.
+
+This is the same formal verification approach applied in Section 9.4 of this paper to the primitive set as a mathematical object. The distinction is that Orkestratum applies it to a specific implementation, enforcing that the implementation refines the specification rather than merely matching the specification's outward behavior. The full refinement program is future work (identified in the blueprint's Phase 5); the current state is that all primitives have TLA+ specifications, five LeanFormer compositions have verified specifications, and the phase-aware ConvergenceGovernor's NoCoolingFromCold invariant has been verified across 18.6 million states.
+
+### 6.6 What Orkestratum Demonstrates About DAC
+
+The case study establishes three things the analytical collapse cannot establish alone.
+
+First, the primitive set is engineerable. Seventeen primitives are few enough that they can be implemented, tested, and verified by a small team. The blueprint's engineering scope is bounded and trackable. This is evidence that the governance boundary is at a useful level of abstraction: low enough that implementation is feasible, high enough that domains reuse the primitives without forcing them to sprawl.
+
+Second, the primitive set survives multi-domain contact. When four DAG workload domains and one real-time rendering domain are executing on the same primitives simultaneously, each domain's constraints test the primitives. The rendering pipeline tests that the primitives are fast enough. The DAG workloads test that the primitives are expressive enough for capability-gated orchestration. The audit chain tests that the primitives compose under concurrent mutation. A primitive that passed one domain's constraints but failed another's would have been flagged by the conformance audit and would appear in the "in progress" list in Section 6.2. The list of in-progress items is bounded and does not include "the primitive set does not work for domain X."
+
+Third, the primitive set enables cross-domain transfer. The phase-aware ConvergenceGovernor (developed to fix the B=0 observational degeneracy in LeanFormer) is the same primitive implementation that governs physics constraint solving and, when federated authorities are added, will govern RAFT-based cluster convergence. A fix motivated by an ML training bug improves rendering physics and distributed consensus because they share the primitive. This is the operational form of the cross-domain optimization transfer claim.
+
+The limitations of this case study are stated in Section 6.2. Orkestratum is not a finished system. The performance consolidation is in progress. The formal verification program is partial. The claim is that a single runtime executes multiple domains with the same primitive set, not that the runtime has reached feature parity or peak performance in any individual domain.
+
+---
+
+## 7. Extended Case Study: The AI Domain
+
+### 7.1 The Deepest Collapse
+
+The most striking result of applying DAC to machine learning is the observation that the transformer architecture [2], the foundation of every modern large language model, is a composition of primitives that the methodology had already identified before the AI domain was examined.
 
 Attention is soft competitive selection. The transformer's multi-head attention mechanism computes, for each query token, a weighted combination of value vectors where the weights are determined by similarity between the query and key vectors. This is CompetitiveSelection in soft mode: the dot-product similarity is the scoring function, softmax produces the weighted allocation, and each attention head is one selection pass. Multi-head attention is parallel selection passes over the same candidates with different scoring functions.
 
-Backpropagation is a single-pass variant of PropagationPass. The forward pass builds a directed acyclic computation graph. The backward pass propagates gradient values from the loss node backward through the graph in reverse topological order, applying the chain rule at each node to compute local gradients.
+A precision caveat is necessary on the strength of this mapping. The structural identity (softmax-weighted sum over candidates with a scoring function) is real, but attention has properties that matter for what people actually do with attention: differentiability, gradient flow through the weights, and learned (rather than designed) scoring. The mapping captures the structure and loses the function. The function is most of what makes attention useful in its native domain. The mapping is therefore a lens that enables cross-domain optimization transfer, not a substitute for the ML literature on attention.
 
-A precision caveat is necessary here. Backpropagation is a single reverse pass on a DAG. It does not require iterative relaxation to a fixed point the way Bellman-Ford does on graphs with cycles [3]. The collapse is not "backpropagation equals Bellman-Ford." The collapse is that both backpropagation and Bellman-Ford are instances of PropagationPass: the shared structural primitive of message passing over a graph toward a consistent state. The instantiation parameters differ: graph topology (DAG vs. cyclic), traversal order (single reverse pass vs. iterative relaxation), message function (Jacobians vs. edge weights), and termination condition (one pass vs. convergence). The primitive is the message-passing structure. The domain determines the graph, the messages, and the termination condition.
-
-This mapping is the weakest of the three major AI collapses. The shared structure (messages flowing through a graph) is real but broad enough that calling both instances of the same primitive carries some risk of overclaiming. The honest framing is that PropagationPass is a family of operations parameterized by topology and termination, and backpropagation is one member of that family. The value of the mapping is that it makes visible the connection between gradient computation, routing convergence, and lighting propagation, enabling cross-domain insight. The risk is treating a family resemblance as an identity.
+Backpropagation is a member of the PropagationPass family. The forward pass builds a directed acyclic computation graph. The backward pass propagates gradient values from the loss node backward through the graph in reverse topological order, applying the chain rule at each node to compute local gradients. The shared structure with iterative relaxation (Bellman-Ford, belief propagation) is message passing over a graph toward a consistent state. The instantiation parameters differ substantially: backpropagation is a single reverse pass on a DAG with termination after one traversal; Bellman-Ford is iterative relaxation on a graph with cycles with termination at fixed point. Calling both instances of the same primitive carries real risk of overclaiming, and the honest framing is that PropagationPass is a family parameterized by topology, traversal order, message function, and termination condition, of which backpropagation is one member. The value of the mapping is that it makes visible the connection between gradient computation, routing convergence, and lighting propagation, enabling cross-domain insight. The risk is treating a family resemblance as an identity. This paper treats it as family resemblance.
 
 Speculative decoding is the two-level fidelity architecture. A fast small model generates candidate tokens (coarse pass) [8]. A large model verifies them (fine selection). Accepted tokens are actuated. Rejected tokens are discarded. This is the same structure as the rendering fidelity pipeline: coarse traversal reduces the candidate set, fine selection determines winners, actuation evaluates only winners. The same architecture that makes rendering efficient makes inference efficient.
 
-### 6.2 Implications
+### 7.2 Implications and Evidence Status
 
-These are not analogies. They are structural identities (with the precision caveat on backpropagation noted above). The implication is that any optimization of CompetitiveSelection, discovered in any domain, is potentially applicable to attention. Any optimization of PropagationPass, discovered in any domain, is potentially applicable to gradient computation. The collapsed primitive set creates a channel for cross-domain optimization transfer that does not exist when each domain maintains its own vocabulary.
+The mappings above are structural identities, with the precision caveats noted. The implication is that any optimization of CompetitiveSelection discovered in any domain is potentially applicable to attention. Any optimization of PropagationPass discovered in any domain is potentially applicable to gradient computation. The collapsed primitive set creates a channel for cross-domain optimization transfer that does not exist when each domain maintains its own vocabulary.
 
 Linear attention [10], sparse attention, and flash attention are all optimizations of CompetitiveSelection in soft mode. Convergence governors and temporal amortization, developed for real-time lighting, become potentially applicable to training loop optimization. The primitive vocabulary makes these connections visible. The domain vocabulary hides them.
 
-A candid assessment of validation status: cross-domain optimization transfer is the most powerful claim DAC makes, and it is now supported by three distinct demonstrations at increasing levels of maturity. The LeanFormer architecture (Sections 5.3-5.7) shows five systems engineering solutions applied to model design problems. The targeted training system (Section 5.8) shows the same primitive set applied to the training process itself, a second, independent application of cross-domain transfer to a different stage of the ML lifecycle, validated at 204M parameters across 7,228 training steps. The B=0 observational degeneracy diagnosis (Section 5.8.1) shows a third application: DAC's vocabulary-stripping methodology applied to a failure in a DAC-governed system, recognizing the structural identity of a novel ML training bug with solved problems from rendering, networking, and distributed consensus. The structural insight that training was missing the selectivity, hierarchy, budget governance, and per-group convergence primitives that every other domain uses was a direct DAC prediction, and the 204M validation confirms the prediction holds empirically. Full validation of cross-domain optimization transfer across all twelve domains remains ongoing work, but the evidence now spans three independent applications.
+A candid assessment of validation status: cross-domain optimization transfer is the most powerful claim DAC makes. The evidence for it to date consists of:
+
+- Five systems-engineering solutions applied to ML model design in LeanFormer (Sections 5.3–5.7), demonstrating that patterns from file systems, database multi-tenancy, and signal processing transfer into ML architectural decisions.
+- The targeted training system (Section 5.8), demonstrating that the same primitive set applies to the training process itself, validated at 204M parameters across 7,228 training steps.
+- The B=0 observational degeneracy diagnosis (Section 5.8.1), demonstrating that a novel ML training bug can be recognized as structurally identical to solved problems from rendering, networking, and distributed consensus, with the fix derived from the cross-domain pattern.
+- The shared ConvergenceGovernor implementation in Orkestratum (Section 6), which is the same primitive instance serving both ML training and physics constraint solving. A fix motivated by ML training (the phase-aware variant) is available to rendering without rework.
+
+These are strong but one-directional: they are all cases of systems-engineering patterns transferring into ML or to other systems-governed domains. The stronger claim would be a bidirectional transfer: an optimization discovered in ML, applied to a non-ML domain, producing a measurable improvement there. This has not yet been demonstrated and is identified as future work (Section 9.5). The current evidence supports "cross-domain recognition enables ML-direction transfer" rather than "the primitive set is a bidirectional channel for optimization." The latter is the methodology's aspiration; the former is what has been shown.
 
 ---
 
-## 7. The DAG Workload Collapse
+## 8. The DAG Workload Collapse
 
-### 7.1 Four Domains, One Pattern
+### 8.1 Four Domains, One Pattern
 
 The most practically significant collapse is the identification that CI/CD pipelines, ETL workflows, configuration management playbooks, and SOAR automation playbooks are structurally identical. All four are:
 
@@ -690,24 +893,26 @@ A directed acyclic graph of tasks with typed dependencies, executed under budget
 
 The practical consequence is that a single execution engine can replace Ansible, Jenkins, Airflow, and Splunk SOAR, not by implementing four separate systems, but by recognizing that four separate systems were never needed. The vocabulary was different. The computation was the same.
 
-### 7.2 Why This Collapse Was Invisible
+Section 6 describes the empirical form of this claim: Orkestratum executes all four domains on one scheduler with one primitive set.
 
-These four domains are served by different industries, different conferences, different vendor ecosystems, and different job titles. A CI/CD engineer uses Jenkins or GitHub Actions. An ETL engineer uses Airflow or dbt. A configuration management engineer uses Ansible or Puppet. A security engineer uses Splunk SOAR or Palo Alto XSOAR. Each tool has its own vocabulary, its own plugin ecosystem, its own certification program.
+### 8.2 Why This Collapse Was Invisible
 
-The vocabulary creates the market. The market creates the specialization. The specialization prevents anyone from noticing that all four tools do the same thing. DAC dissolves this by asking: what does each tool actually compute? The answer, in every case, is: it traverses a DAG under constraints and executes tasks at each node. The "domain-specific" part is the task function, which belongs in a sandboxed execution boundary, not in the kernel.
+These four domains are served by different industries, different conferences, different vendor ecosystems, and different job titles. A CI/CD engineer uses Jenkins or GitHub Actions. An ETL engineer uses Airflow or dbt. A configuration management engineer uses Ansible or Puppet. A security engineer uses Splunk SOAR or Palo Alto XSOAR. Each tool has its own vocabulary, its own plugin ecosystem, and its own certification program.
+
+The vocabulary creates the market. The market creates the specialization. The specialization prevents anyone from noticing that all four tools do the same thing. DAC dissolves this by asking: what does each tool actually compute? The answer, in every case, is: it traverses a DAG under constraints and executes tasks at each node. The domain-specific part is the task function, which belongs in a sandboxed execution boundary, not in the kernel.
 
 ---
 
-## 8. The Composition Algebra
+## 9. The Composition Algebra
 
-### 8.1 How Domains Are Reconstructed
+### 9.1 How Domains Are Reconstructed
 
-The value of abstraction collapse is not merely taxonomic. It is constructive: once the primitives are identified, every domain pattern can be systematically constructed as a composition. The following composition map documents the reconstruction of common computational patterns from the collapsed primitive set.
+The value of abstraction collapse is not merely taxonomic. It is constructive: once the primitives are identified, every domain pattern can be systematically constructed as a composition. The following composition map documents the reconstruction of common computational patterns from the primitive set.
 
 | Pattern | Core Primitives | Governance |
 |---------|----------------|------------|
 | LOD / Quality scaling | QualityHierarchy + TraversalEngine + AllocationSnapshot | Budget\<Bytes\> |
-| Global illumination | PropagationPass + ConvergenceGovernor | Budget\<Microseconds\> + TemporalOrchestrator |
+| Global illumination | PropagationPass + ConvergenceGovernor | Budget\<Microseconds\> |
 | Physics simulation | Reduction + CompetitiveSelection (hard) + PropagationPass + ActuationPass | Budget\<Microseconds\> + ConvergenceGovernor |
 | Network sync | PropagationPass + TraversalEngine + Diff | FederatedBudget\<BytesPerSecond\> |
 | Container orchestration | QualityHierarchy + TraversalEngine + ActuationPass | Budget\<CPU/Memory\> + ConvergenceGovernor |
@@ -716,27 +921,26 @@ The value of abstraction collapse is not merely taxonomic. It is constructive: o
 | Configuration management | Diff\<State\> + ConvergenceGovernor + ActuationPass | (none) |
 | SOAR playbook | RelationshipGraph + TraversalEngine + ActuationPass | Capability-gated I/O |
 | Market simulation | CompetitiveSelection (hard) + PropagationPass + Transaction | FederatedBudget + ConvergenceGovernor |
-| ML training loop | ActuationPass + Reduction + PropagationPass | ConvergenceGovernor + TemporalOrchestrator |
 | ML inference | ActuationPass + CompetitiveSelection (soft) + Memoize | Budget\<FLOPs\> |
 | Belief delta system | Budget\<Parameters\> + ResourceRegistry + Transaction + CompetitiveSelection (ranked) | AuditSink |
 | Targeted training pipeline | CompetitiveSelection (ranked) + FederatedBudget\<GradientCompute\> + QualityHierarchy + TraversalEngine + ActuationPass + Reduction + PropagationPass | ConvergenceGovernor (per-group) + AuditSink |
-| Governed data pipeline | QualityHierarchy\<SampleDifficulty\> + CompetitiveSelection (ranked) + Sampler | Budget\<SamplesPerStep\> + AuditSink |
-| Change-triggered evaluation | Signal\<ConvergenceChange\> + CompetitiveSelection (ranked) + ActuationPass + Reduction | Budget\<EvalCompute\> + ConvergenceGovernor (per-metric) + AuditSink |
-| Readiness-gated knowledge forge | Signal\<GroupConverged\> + ConvergenceGovernor + CompetitiveSelection (ranked) + ActuationPass + Reduction | Budget\<ForgeCompute\> + AuditSink |
+| Constraint logic search | RelationshipGraph + TraversalEngine + PropagationPass + Checkpoint | ConvergenceGovernor |
+| Lattice dataflow | RelationshipGraph + PropagationPass + Reduction | ConvergenceGovernor (widening mode) |
+| Unification | ResourceRegistry (monotonic) + TraversalEngine + PropagationPass + ActuationPass | ConvergenceGovernor |
 
-### 8.2 The Key Insight: Structure vs. Function
+### 9.2 The Key Insight: Structure vs. Function
 
 In every composition above, the primitives provide the structure: how data flows, how resources are allocated, how convergence is detected, how mutations are audited. The domain provides the function: what computation to apply at each step.
 
-The rendering equation is a domain function. Newton's laws are a domain function. The RAFT consensus protocol's log replication rule is a domain function. The machine learning loss function is a domain function. The attention scoring function (dot-product similarity) is a domain function. None of these belong in the kernel of abstraction primitives. All of them execute within the governance framework the primitives provide.
+The rendering equation is a domain function. The RAFT consensus protocol's log replication rule is a domain function. The machine learning loss function is a domain function. The attention scoring function (dot-product similarity) is a domain function. The unification consistency check is a domain function. None of these belong in the kernel of abstraction primitives. All of them execute within the governance framework the primitives provide.
 
 This separation is what makes the primitive set simultaneously lean and broadly applicable. It contains no domain knowledge. It contains the execution model shared by every domain examined.
 
 ---
 
-## 9. Methodology Validation Criteria
+## 10. Methodology Validation Criteria
 
-### 9.1 How to Know the Collapse Is Real
+### 10.1 How to Know the Collapse Is Real
 
 A collapse is genuine (not merely a renaming exercise) if and only if:
 
@@ -748,43 +952,49 @@ A collapse is genuine (not merely a renaming exercise) if and only if:
 
 4. Cross-domain transfer: An optimization discovered in one domain, when applied to the shared primitive, produces measurable improvement in other domains that use the same primitive.
 
-Criterion 1 is satisfied for all twelve domains. Criterion 3 is satisfied for the domains where working implementations exist. Criterion 4 is demonstrated through three independent applications: the LeanFormer architecture (Sections 5.3-5.7), where systems engineering solutions (budget-governed transactions, federated address-space partitioning, convergence-based confidence detection) were successfully applied to ML model design problems (catastrophic forgetting, knowledge composition, confabulation detection); the targeted training system (Section 5.8), where the same primitive set was applied to the training process, validated at 204M parameters with all governance invariants holding across 7,228 training steps; and the B=0 observational degeneracy diagnosis (Section 5.8.1), where DAC's vocabulary-stripping methodology was applied to a failure in a DAC-governed system, recognizing its structural identity with solved problems from rendering, networking, and distributed consensus. Full validation of criterion 4 across all twelve domains is ongoing work.
+Criterion 1 is satisfied for all twenty examined domains after the adversarial pass (Section 2.5), which produced one new primitive and two refinements. Criterion 3 is satisfied for the domains where working implementations exist (LeanFormer for ML; Orkestratum for SOAR, CI/CD, ETL, configuration management, and rendering).
 
-Criterion 2 (minimality) deserves explicit scrutiny. The claim that no primitive can be expressed as a composition of the others has not been formally proven. Some candidates for potential redundancy: Can RateLimit be expressed as Budget\<Operations\> + TemporalOrchestrator? Can Signal\<T\> be derived from AuditSink + a predicate filter? These might be legitimate standalone primitives, or they might be compositions. If they are compositions, the primitive count drops below sixteen and the narrative changes, but the methodology's validity does not. The important claim is that the set is sufficient, not that it is provably minimal. Proving minimality would require showing that removing each primitive creates at least one domain pattern that becomes unexpressible, a worthwhile exercise that has not yet been completed.
+Criterion 4 has partial evidence. One-directional transfer (systems patterns into ML) is demonstrated by LeanFormer. Transfer within the Orkestratum runtime (a fix in one domain's use of a primitive benefiting another domain through the shared implementation) is demonstrated by the phase-aware ConvergenceGovernor. Bidirectional transfer and transfer across all twelve domains remain future work.
 
-A related but distinct property has been formally verified: operational irreducibility. Every primitive was specified in TLA+ and systematically decomposed into plausible sub-operations (separating the guard from the mutation, removing intermediate states, splitting atomic operations into phases). In all seventeen cases, the TLC model checker found concrete counterexamples where the decomposed version violated the primitive's governance invariant. This does not prove minimality (that no primitive is a composition of other primitives in the set), but it proves that each primitive is atomic with respect to its own invariant. The guard and the guarded operation cannot be separated without losing the guarantee. Operational irreducibility is a weaker claim than algebraic minimality but a stronger claim than the paper would have without formal verification. The distinction matters: minimality asks whether the set can be made smaller; operational irreducibility asks whether each element can be made simpler. The TLA+ verification answers the second question definitively.
+Criterion 2 (minimality) deserves explicit scrutiny. The claim that no primitive can be expressed as a composition of the others has not been formally proven. Some candidates for potential redundancy: Can RateLimit be expressed as Budget\<Operations\> + a temporal mechanism? Can Signal\<T\> be derived from AuditSink + a predicate filter? These might be legitimate standalone primitives, or they might be compositions. If they are compositions, the primitive count drops and the narrative changes, but the methodology's validity does not. The important claim is that the set is sufficient, not that it is provably minimal. Proving minimality would require showing that removing each primitive creates at least one domain pattern that becomes unexpressible, a worthwhile exercise that has not yet been completed.
 
-### 9.2 Threats to Validity
+A related but distinct property has been formally verified: operational irreducibility. Every primitive was specified in TLA+ and systematically decomposed into plausible sub-operations (separating the guard from the mutation, removing intermediate states, splitting atomic operations into phases). In all cases tested, the TLC model checker found concrete counterexamples where the decomposed version violated the primitive's governance invariant. This does not prove minimality (that no primitive is a composition of other primitives in the set), but it proves that each primitive is atomic with respect to its own invariant. The guard and the guarded operation cannot be separated without losing the guarantee. Operational irreducibility is a weaker claim than algebraic minimality but a stronger claim than the paper would have without formal verification. The distinction matters: minimality asks whether the set can be made smaller; operational irreducibility asks whether each element can be made simpler. The TLA+ verification answers the second question definitively.
 
-The most significant methodological risk is confirmation bias. All twelve domains were collapsed by the same individual, and once a primitive vocabulary exists, there is a cognitive pull to force every new domain into it rather than honestly admitting when the existing primitives are insufficient.
+### 10.2 Threats to Validity
 
-Three properties of the development process mitigate this risk. First, the primitives were discovered incrementally, not designed a priori. SOAR was the first domain. Rendering was added second and forced the addition of QualityHierarchy, TraversalEngine, and CompetitiveSelection, primitives that SOAR alone did not require. Each subsequent domain either mapped onto existing primitives or forced additions when the existing set was genuinely insufficient. The primitive count grew from five to sixteen over the course of twelve domains. If confirmation bias were dominant, it would have stayed at five.
+The most significant methodological risk is confirmation bias. All twenty domains were collapsed by the same individual, and once a primitive vocabulary exists, there is a cognitive pull to force every new domain into it rather than honestly admitting when the existing primitives are insufficient.
 
-Second, the LeanFormer implementation produces working systems with measurable outputs. Bit-for-bit weight restoration after belief removal, 119 passing tests, 84% injection success rates, and 86% routing accuracy are objective evidence that the collapsed compositions are operationally correct, not merely descriptively plausible. The targeted training system provides independent additional evidence at two scales: the 4.8M preliminary validation confirmed governance machinery correctness, and the 204M scale validation confirmed that all sixteen primitives compose correctly across 7,228 training steps with zero governance violations. The hierarchy activated in the predicted coarse-to-fine order through the correct signal path (convergence-gated, no hardcoded triggers), with the L3 activation at step 2,773 representing genuine post-learning convergence. The B=0 initialization artifact that caused premature activation at L1 and L2 was itself diagnosed using DAC's vocabulary-stripping methodology (Section 5.8.1), which identified the failure as an observational degeneracy, a pattern already solved across the collapse table. This finding is evidence of the methodology's value: the structure/function separation predicted that governance correctness and domain function calibration are independent concerns, and the B=0 issue confirmed this prediction. The governance was correct; the threshold needed tuning.
+Four properties of the development process mitigate this risk.
 
-Third, the LeanFormer implementation was produced using an AI coding agent (Claude Code) operating under strict architectural authority with hostile verification protocols: requiring log evidence rather than diff evidence, re-reading source rather than trusting summaries, and enforcing strict scope boundaries per change. This discipline reduced the risk of the implementation silently deviating from the architectural specification in ways that would mask a failed collapse.
+First, the primitives were discovered incrementally, not designed a priori. SOAR was the first domain. Rendering was added second and forced the addition of QualityHierarchy, TraversalEngine, and CompetitiveSelection, primitives that SOAR alone did not require. Each subsequent domain either mapped onto existing primitives or forced additions when the existing set was genuinely insufficient. The primitive count grew from five to sixteen over the twelve original domains, and from sixteen to seventeen with the addition of Checkpoint in the adversarial domain pass. If confirmation bias were dominant, the count would have stayed at five.
 
-Fourth, the TLA+ formal verification process (Section 9.4) subjected every primitive and composition to exhaustive model checking. The model checker does not share the author's assumptions or biases. It explores every reachable state mechanically. The five corrections it produced (Section 9.4) demonstrate that the verification was genuine: if the model checker had simply confirmed every initial assumption, the exercise would have been less credible. The corrections are evidence that the formal verification process had teeth and that the final specifications survived real scrutiny.
+Second, the LeanFormer implementation produces working systems with measurable outputs. Bit-for-bit weight restoration after belief removal, 119 passing tests, 84% injection success rates, 86% routing accuracy, and the 204M scale validation (with zero governance violations across 7,228 steps and 722 audit records) are objective evidence that the collapsed compositions are operationally correct, not merely descriptively plausible. The B=0 diagnosis confirmed an a priori DAC prediction: governance correctness and domain function calibration are independent concerns, and the B=0 issue was a domain function calibration bug, not a primitive failure.
 
-The residual risk remains: domains not yet examined may require primitives outside the current set. The claim is that sixteen primitives suffice for twelve examined domains, not that they suffice for all possible computation. Future work may extend the set.
+Third, the Orkestratum runtime provides evidence that does not depend on any single domain. When the same primitive implementation serves five domains simultaneously, the question "did you force this domain into your primitive set" has a different answer than when the primitive set is checked against one domain at a time. The runtime is either consistent across all domains or it is not. The conformance audit, with its line-number traces and invariant mappings, provides the ground truth. The audit is not presented in this paper as a full disclosure; the blueprint document is separate engineering record. What the paper can cite is that the audit exists, is in active use, and has produced a specific, bounded list of remediation items that are tracked against gates.
 
-### 9.3 Limitations
+Fourth, the TLA+ formal verification process subjected every primitive and composition to exhaustive model checking at the tested bounds. The model checker does not share the author's assumptions or biases. It explores every reachable state mechanically. The five corrections it produced (Section 10.4) demonstrate that the verification was genuine: if the model checker had simply confirmed every initial assumption, the exercise would have been less credible. The corrections are evidence that the formal verification process had teeth.
 
-DAC does not claim that domain expertise is unnecessary. The domain function (the rendering equation, Newton's laws, the attention scoring function) requires domain expertise to design. What DAC claims is that the execution infrastructure around the domain function is generic and need not be redesigned per domain. Domain-specific vocabulary is accidental complexity for the execution infrastructure. It is essential complexity for the domain function. The boundary between the two is real, and the paper draws it at the governance layer: the primitives provide structure and governance, the domain provides the computation that executes within that governance. Readers should not interpret the claim that "vocabulary is clothing" as a claim that domain expertise is unnecessary. The clothing covers something real. The claim is that the structural skeleton underneath is shared.
+The residual risk remains: domains not yet examined may require primitives outside the current set. The adversarial domain pass (Section 2.5) added one primitive, which is both evidence that the pass was real (if the primitive set covered everything, no addition would have been needed) and a reminder that future adversarial passes may add more. The claim is that seventeen primitives suffice for twenty examined domains, not that they suffice for all possible computation.
 
-DAC also does not claim that sixteen primitives are the final, minimal set. Future domains may reveal operations that genuinely cannot be expressed as compositions of the current set, requiring the addition of new primitives. The claim is that sixteen suffice for the twelve domains examined, not that they suffice for all possible computation.
+### 10.3 Limitations
 
-The twelve domains examined share a bias toward resource-governed execution. Domains with fundamentally different computational characters (constraint logic programming, probabilistic programming, formal verification, bioinformatics) may stress the primitive set in ways that reveal gaps. Testing against adversarial domains is necessary future work.
+DAC does not claim that domain expertise is unnecessary. The domain function (the rendering equation, the attention scoring function, the unification consistency check) requires domain expertise to design. What DAC claims is that the execution infrastructure around the domain function is generic and need not be redesigned per domain. Domain-specific vocabulary is accidental complexity for the execution infrastructure. It is essential complexity for the domain function. The boundary between the two is drawn at the governance layer: the primitives provide structure and governance; the domain provides the computation that executes within that governance. Readers should not interpret the claim that "vocabulary is clothing" as a claim that domain expertise is unnecessary. The clothing covers something real. The claim is that the structural skeleton underneath is shared.
 
-All twelve domains were collapsed by the same individual. Independent replication by other researchers applying DAC to domains outside the current twelve is necessary to establish that the methodology is reproducible and that the primitive set generalizes beyond the author's own analytical perspective. The incremental discovery process, the formal verification, and the hostile audit protocols mitigate confirmation bias but do not eliminate it. The strongest validation of DAC's generality would be a practitioner in an unexamined domain independently discovering that the sixteen primitives express their domain's computational patterns, or honestly reporting where the primitives are insufficient and a seventeenth is required.
+DAC does not claim that seventeen primitives are the final, minimal set. Future domains may reveal operations that genuinely cannot be expressed as compositions of the current set, requiring the addition of new primitives. The claim is that seventeen suffice for the twenty domains examined, not that they suffice for all possible computation.
 
-The LeanFormer empirical validation has a significant scale limitation that must be stated directly. The architectural results (39M parameters) are proof-of-concept validations, not production-scale demonstrations. The 204M parameter training run validated that all sixteen primitives compose correctly under real training conditions across 7,228 optimizer steps, with all governance invariants holding throughout. However, 204M is modest by current standards, and many of the efficiency mechanisms that DAC predicts (gradient compute reduction from hierarchical activation, budget-governed routing of gradient signal to relevant parameter groups) were not realized as wall-clock improvement in this run. The governance machinery correctly identified which parameters to stop training and reallocated budget, but the training loop did not skip computation for converged groups. The governance produced the right signal; the implementation did not yet act on it efficiently.
+The twenty domains examined share characteristics that favor the primitive set. Resource-governed execution is well-covered (the original twelve). Symbolic computation with backtracking is newly covered (the adversarial pass). Domains with fundamentally different computational characters than any examined here (interactive theorem proving with tactics, quantum circuit simulation, biological sequence alignment against reference genomes) may stress the primitive set in ways that reveal further gaps.
+
+All twenty domains were collapsed by the same individual. Independent replication by other researchers applying DAC to domains outside the current twenty is necessary to establish that the methodology is reproducible and that the primitive set generalizes beyond the author's own analytical perspective. The incremental discovery process, the formal verification, and the hostile audit protocols mitigate confirmation bias but do not eliminate it. The strongest validation of DAC's generality would be a practitioner in an unexamined domain independently discovering that the primitive set expresses their domain's computational patterns, or honestly reporting where the primitives are insufficient and an eighteenth is required.
+
+The LeanFormer empirical validation has a significant scale limitation. The architectural results (39M parameters) are proof-of-concept validations, not production-scale demonstrations. The 204M parameter training run validated that all seventeen primitives compose correctly under real training conditions across 7,228 optimizer steps, with all governance invariants holding throughout. However, 204M is modest by current standards, and many of the efficiency mechanisms that DAC predicts (gradient compute reduction from hierarchical activation, budget-governed routing of gradient signal) were not realized as wall-clock improvement in this run. The governance machinery correctly identified which parameters to stop training and reallocated budget, but the training loop did not skip computation for converged groups. The governance produced the right signal; the implementation did not yet act on it efficiently.
 
 The 204M run also suffered from training configuration limitations that prevent strong claims about language modeling quality. Single-epoch training with minimal regularization (dropout 0.1 only) produced severe overfitting after step 2,000, with validation perplexity rising from 57.6 to 1,463.9. The overfitting is expected behavior and does not indicate an architectural failure, but it means the model's generalization quality should be evaluated from the best checkpoint (step 2,000), not the final checkpoint. Multi-epoch training with proper regularization is necessary to demonstrate that the architecture can produce competitive language models, and is identified as necessary future work.
 
-The critical open question is whether DAC's governance primitives continue to compose correctly and produce measurable efficiency gains at the scales where modern language models operate (7B+ parameters). Emergent training dynamics, optimization instabilities, and loss landscape characteristics at the billion-parameter scale may interact with the governance mechanisms in ways that the current validation cannot anticipate. A specific concern is governor thrashing: at scales where gradient magnitudes spike randomly, the convergence governor could oscillate rapidly between states. The existing design mitigates this structurally — state transitions require sustained EMA trends over a configurable cooling window, not single-step readings, and the AWAKENED state is explicitly designed to handle perturbation events without re-traversing the full state sequence — but the thresholds will require recalibration for frontier-scale gradient distributions. The phase-aware governor (Section 5.8.1) adds a further structural guard: a group in COLD phase cannot transition to COOLING regardless of gradient magnitude, preventing the initialization artifact class of false transitions entirely. A full-scale validation at 7B parameters or above, where the efficiency claims become practically significant and the optimization dynamics are representative of frontier training, is the single most important next step for this research. Until that validation is complete, the LeanFormer results should be read as architectural proof-of-concept and governance machinery validation, not as demonstrated production-scale efficiency gains.
+The Orkestratum runtime's demonstrations are bounded by what the codebase currently supports (Section 6.2). The runtime is an active engineering program. The claim is that one runtime serves five domains with the same primitives, not that the runtime is feature-complete or performance-optimal in any of them.
 
-A data preservation gap from the 204M run warrants mention as a reproducibility concern. The tokenized training data (32K vocabulary) was stored only on the GCP VM and in a cloud storage bucket, both of which were deleted when the VM was terminated. The local copy of the raw corpus was tokenized with a different vocabulary size (50K), making it incompatible with the trained model for validation purposes. The inline EVAL measurements from the training log remain the authoritative validation numbers, as they were computed against the correctly-tokenized data during training. The lesson is straightforward: the governance machinery (audit chain, hash-chained provenance) preserved every training decision with tamper-evident integrity, but the training data itself was not under governance. Future runs should archive the tokenized data alongside checkpoints.
+The critical open question for LeanFormer is whether DAC's governance primitives continue to compose correctly and produce measurable efficiency gains at the scales where modern language models operate (7B+ parameters). Emergent training dynamics, optimization instabilities, and loss landscape characteristics at the billion-parameter scale may interact with the governance mechanisms in ways that the current validation cannot anticipate. A specific concern is governor thrashing: at scales where gradient magnitudes spike randomly, the convergence governor could oscillate rapidly between states. The existing design mitigates this structurally — state transitions require sustained EMA trends over a configurable cooling window, not single-step readings, and the AWAKENED state is explicitly designed to handle perturbation events without re-traversing the full state sequence — but the thresholds will require recalibration for frontier-scale gradient distributions. The phase-aware governor (Section 5.8.1) adds a further structural guard: a group in COLD phase cannot transition to COOLING regardless of gradient magnitude, preventing the initialization artifact class of false transitions entirely. A full-scale validation at 7B parameters or above is the single most important next step for the LeanFormer validation. Until that validation is complete, the LeanFormer results should be read as architectural proof-of-concept and governance machinery validation, not as demonstrated production-scale efficiency gains.
+
+A data preservation gap from the 204M run warrants mention as a reproducibility concern. The tokenized training data (32K vocabulary) was stored only on the GCP VM and in a cloud storage bucket, both of which were deleted when the VM was terminated. The local copy of the raw corpus was tokenized with a different vocabulary size (50K), making it incompatible with the trained model for validation purposes. The inline EVAL measurements from the training log remain the authoritative validation numbers, as they were computed against the correctly-tokenized data during training. The lesson is straightforward: the governance machinery preserved every training decision with tamper-evident integrity, but the training data itself was not under governance. Future runs should archive the tokenized data alongside checkpoints.
 
 The TLA+ formal verification is bounded model checking, not unbounded proof. The TLC model checker exhaustively explores all reachable states within finite bounds (Budget capacity of 4, three-node hierarchies, two parameter groups). Structural bugs and invariant violations are reliably caught at these bounds because the primitive structures do not change with scale. However, bounded verification does not constitute a mathematical proof that the invariants hold for all possible values of the constants. It provides strong evidence, not certainty.
 
@@ -796,27 +1006,25 @@ The same solution applies to the convergence governor. Gradient trajectories at 
 
 This extends the scope of formal verification beyond governance correctness into domain function validation. The specific numerical thresholds remain empirical, but the qualitative correctness of the governor's response to different trajectory classes is formally verifiable. At 7B parameters, the expected trajectory classes (cold start, rapid learning, optimization instability with gradient spikes, gradual convergence, perturbation from belief injection) can be enumerated and the governor's response to each can be verified by TLC before a single GPU hour is spent. Formal verification cannot predict whether a 7B model will converge in 10,000 steps or 100,000. But it can prove that the governance machinery will respond correctly to whatever trajectory the model produces.
 
-The formal verification also does not verify implementations. The TLA+ specifications define what the primitives must do. The Python, Rust, Go, and TypeScript implementations in Appendix A are intended to be faithful to those specifications, but the verification that each implementation correctly implements the specification is a separate concern (refinement checking) that has not been performed. A bug in the Python implementation of Budget\<U\> would not be caught by the TLA+ verification of the Budget specification.
+The formal verification also does not verify implementations. The TLA+ specifications define what the primitives must do. The implementations in Appendix A are intended to be faithful to those specifications, but the verification that each implementation correctly implements the specification is a separate concern (refinement checking). Orkestratum's engineering blueprint schedules this refinement checking as a dedicated phase; at the time of writing, refinement specifications exist for the primitive layer and composition specifications exist for key reconcilers, but the full per-primitive refinement verification is future work.
 
-### 9.4 Formal Verification and What It Revealed
+### 10.4 Formal Verification and What It Revealed
 
-All nineteen primitive specifications (including the phase-aware ConvergenceGovernor), five LeanFormer compositions, and eighteen decomposition-failure specifications were formalized in TLA+ [14] and verified by the TLC model checker. The verification explored approximately 45.4 million states in under one minute, with the phase-aware ConvergenceGovernor alone accounting for 18.6 million states across its full space of possible delta sequences and gradient phase transitions. The complete specifications, configuration files, and TLC output logs are available in the project repository.
+All seventeen primitive specifications (including the phase-aware ConvergenceGovernor), five LeanFormer compositions, and corresponding decomposition-failure specifications were formalized in TLA+ [14] and verified by the TLC model checker. The verification explored approximately 45.4 million states at the tested bounds, with the phase-aware ConvergenceGovernor alone accounting for 18.6 million states across its full space of possible delta sequences and gradient phase transitions. The complete specifications, configuration files, and TLC output logs are available in the project repository.
 
 The verification produced three categories of results.
 
-First, all nineteen primitive specifications (sixteen original primitives, two composition invariants from the primitive layer, and the phase-aware ConvergenceGovernor) passed: their safety invariants held across all reachable states at the tested bounds. Budget never exceeded capacity. The ConvergenceGovernor never skipped a state. CompetitiveSelection (hard) always produced the highest-scoring winner. The hash chain in AuditSink was never broken. These results are bounded verification, not unbounded proof, but TLC's exhaustive exploration of the finite state space provides strong evidence that the invariants hold in general.
+First, all primitive specifications passed: their safety invariants held across all reachable states at the tested bounds. Budget never exceeded capacity. The ConvergenceGovernor never skipped a state. CompetitiveSelection (hard) always produced the highest-scoring winner. The hash chain in AuditSink was never broken. These results are bounded verification, not unbounded proof, but TLC's exhaustive exploration of the finite state space provides strong evidence that the invariants hold in general.
 
 Second, all five LeanFormer composition specifications passed, confirming that primitive invariants are preserved under composition and that the composed system produces emergent guarantees. The GovernedTrainingPipeline specification verified six simultaneous invariants across all interleavings of training steps, governor updates, hierarchy activations, budget reallocations, and gradient routing updates. The BeliefDeltaLifecycle specification confirmed base weight immutability, parameter non-overlap, and exact restoration across all possible sequences of belief injection and removal.
 
-Third, all eighteen decomposition-failure specifications produced concrete counterexamples, confirming that every primitive is operationally irreducible with respect to its governance invariant. The counterexamples are not hypothetical. They are specific state traces that TLC discovered through exhaustive exploration. Some violations were found in as few as two states (QualityHierarchy: adding a child without checking the level constraint; the naive ConvergenceGovernor: a single zero-delta step causing premature COOLING, reproducing the exact B=0 bug from the training run). Others required longer traces (Budget: a concurrent allocation between check and act, at seven states). Every counterexample demonstrates a real failure mode that would manifest in any implementation that decomposes the primitive into separate sub-operations.
+Third, decomposition-failure specifications for every primitive produced concrete counterexamples, confirming that every primitive is operationally irreducible with respect to its governance invariant. The counterexamples are not hypothetical. They are specific state traces that TLC discovered through exhaustive exploration. Some violations were found in as few as two states (QualityHierarchy: adding a child without checking the level constraint; the naive ConvergenceGovernor: a single zero-delta step causing premature COOLING, reproducing the exact B=0 bug from the training run). Others required longer traces (Budget: a concurrent allocation between check and act, at seven states). Every counterexample demonstrates a real failure mode that would manifest in any implementation that decomposes the primitive into separate sub-operations.
 
 A precise characterization of what "irreducible" means here is necessary to avoid overclaiming. The decomposition failures demonstrate operational irreducibility: the guard and the guarded operation cannot be separated into distinct steps without creating reachable states where the governance invariant is violated. The mechanism in most cases is a Time-of-Check-to-Time-of-Use (TOCTOU) pattern: a condition is checked, the world changes, and the guarded operation executes against stale state. This is a well-understood concurrency hazard, not a novel discovery. What is novel is the systematic demonstration that every primitive in the set exhibits this property. The governance invariant is not a postcondition that can be checked after the fact. It is an atomic property of the operation itself. Decompose the operation and the property ceases to exist. This is what makes them primitives rather than compositions.
 
-This is a weaker claim than algebraic irreducibility (which would require proving that no primitive can be expressed as a composition of other primitives in the set). The paper addresses algebraic minimality separately in Section 9.1, where it honestly acknowledges that minimality has not been formally proven and identifies specific candidates for potential redundancy (RateLimit as Budget + TemporalOrchestrator, Signal as AuditSink + predicate filter). Operational irreducibility and algebraic minimality are distinct properties. The TLA+ verification establishes the first. The second remains open.
+This is a weaker claim than algebraic irreducibility (which would require proving that no primitive can be expressed as a composition of other primitives in the set). Section 10.1 addresses algebraic minimality separately, acknowledging that minimality has not been formally proven and identifying specific candidates for potential redundancy.
 
 The verification process also challenged and corrected five initial assumptions about the formal specifications. These corrections are worth documenting because they demonstrate that the TLA+ verification was a genuine validation exercise, not a formality.
-
-The five corrections are summarized below. Full details are available in the project repository alongside the TLA+ specifications.
 
 | Specification | Initial Assumption | TLC Finding | Correction |
 |---|---|---|---|
@@ -830,89 +1038,89 @@ None of these corrections invalidated the underlying primitives or their invaria
 
 The fact that the initial specifications required correction is not a weakness of the methodology. It is evidence that the verification was real and that the corrected specifications are trustworthy. A verification process that confirms every initial assumption without correction is either trivial or dishonest.
 
-### 9.5 Future Work
+### 10.5 Future Work
 
 The following represent the most important open questions and necessary next steps, ordered by priority and with estimated resource requirements where applicable.
 
-1. Phase-aware convergence governor implementation and retraining. The TLA+ specification exists and passes (ConvergenceGovernorPhaseAware with NoCoolingFromCold invariant). The implementation requires adding gradient_phase tracking to the convergence governor code, adding a peak_observed flag, and enforcing the NoCoolingFromCold precondition on the ACTIVE-to-COOLING transition. A retrain of the 204M model with the fixed governor would produce clean hierarchy activations free of the B=0 artifact, providing the first unambiguous empirical demonstration of convergence-gated coarse-to-fine training. Estimated cost: approximately $150 (one 6-day L4 GPU run).
+1. Independent replication of DAC by other researchers applying the methodology to domains outside the current twenty. Positive results would confirm the methodology's generality. Negative results (domains where the primitive set is genuinely insufficient) would be equally valuable, as they would identify the boundaries of the current primitive set and potentially reveal new primitives.
 
-2. Multi-epoch training with proper regularization. The current 204M run used a single epoch with dropout 0.1 as the only regularization, producing severe overfitting after step 2,000. A 3-5 epoch run with stronger regularization (dropout 0.15-0.2, weight decay sweep) would demonstrate that the architecture can generalize and that governance invariants hold across extended training, including the possibility of AWAKENED state transitions triggered by data distribution shifts between epochs. Estimated cost: approximately $450-750.
+2. Phase-aware convergence governor implementation and retraining. The TLA+ specification exists and passes (ConvergenceGovernorPhaseAware with NoCoolingFromCold invariant). The implementation requires adding gradient_phase tracking to the convergence governor code. A retrain of the 204M model with the fixed governor would produce clean hierarchy activations free of the B=0 artifact. Estimated cost: approximately $150 (one 6-day L4 GPU run).
 
-3. Scale validation of LeanFormer at 7B+ parameters. This is the single most important validation that the current work lacks. It would include: gradient compute reduction measurements with actual backward-pass skipping for converged groups, wall-clock training time comparisons against an ungoverned baseline, Knowledge Plane validation with orthogonality enforcement at a scale where the delta address space is practically significant, and convergence ordering analysis at a scale where the parameter group ratios are representative of production models. The governance invariants are established as scale-independent (formally verified and empirically confirmed at 204M), but the efficiency claims require empirical validation at frontier scale. Estimated cost: approximately $5,000-15,000 depending on GPU tier and training duration.
+3. Multi-epoch training with proper regularization. The current 204M run used a single epoch with dropout 0.1 as the only regularization, producing severe overfitting after step 2,000. A 3-5 epoch run with stronger regularization would demonstrate that the architecture can generalize and that governance invariants hold across extended training, including the possibility of AWAKENED state transitions triggered by data distribution shifts between epochs. Estimated cost: approximately $450-750.
 
-4. Knowledge Plane validation at 204M. The 39M model demonstrated 84% belief injection success and 86% semantic routing accuracy. Repeating this validation at 204M against the best checkpoint (step 2,000) would confirm that the delta system scales, test injection success rate and routing accuracy at a more representative model size, and verify that the 3,360 theoretical max deltas (rank 16) are practically achievable. Estimated cost: approximately $50 (a few hours of GPU time).
+4. Scale validation of LeanFormer at 7B+ parameters. This is the single most important validation that the current work lacks. It would include: gradient compute reduction measurements with actual backward-pass skipping for converged groups, wall-clock training time comparisons against an ungoverned baseline, Knowledge Plane validation with orthogonality enforcement at a scale where the delta address space is practically significant, and convergence ordering analysis at a scale where the parameter group ratios are representative of production models. The governance invariants are established as scale-independent (formally verified and empirically confirmed at 204M), but the efficiency claims require empirical validation at frontier scale. Estimated cost: approximately $5,000-15,000.
 
-5. Independent replication of DAC by other researchers applying the methodology to domains outside the current twelve. Positive results would confirm the methodology's generality. Negative results (domains where the primitive set is genuinely insufficient) would be equally valuable, as they would identify the boundaries of the current primitive set and potentially reveal new primitives.
+5. Adversarial domain testing beyond the eight domains examined in Section 2.5. Interactive theorem proving with tactics, quantum circuit simulation, and biological sequence alignment against reference genomes are plausible next candidates.
 
-6. Adversarial domain testing against domains with fundamentally different computational characters than the resource-governed execution domains in the current set. Constraint logic programming, probabilistic programming, formal verification, and bioinformatics sequence alignment are the highest-priority candidates.
+6. Bidirectional cross-domain optimization transfer. Demonstrate an optimization discovered in one non-ML domain (rendering, for example), applied to an ML primitive instance via the shared implementation, producing a measurable improvement on an ML benchmark. This is the strongest criterion from Section 10.1 and the one the paper cannot yet fully claim.
 
-7. Cross-domain transfer validation. The paper claims primitives transfer across domains. Independent implementation in two or more non-ML domains from the collapse table (candidates: real-time rendering pipeline, network routing system) would provide the strongest evidence for the methodology's central claim. This is engineering work requiring months of effort but no GPU cost.
+7. Orkestratum formal verification program completion. The engineering blueprint schedules per-primitive refinement verification and per-composition verification as a dedicated phase. Completing this phase would extend the formal guarantee from the primitive-set-as-mathematical-object (already verified) to the primitive-set-as-running-implementation.
 
-8. Refinement checking between TLA+ specifications and implementations, verifying that the Python, Rust, Go, and TypeScript code in Appendix A correctly implements the formal specifications in Appendix B.
+8. Orkestratum performance consolidation. Specific targets include Sponza at 100+ FPS through the unified kernel and Bistro at interactive frame rates. The target demonstrates that the primitive set is not merely expressive but operationally efficient in the domain with the tightest performance constraints.
 
-9. Resolution of the minimality question: for each primitive, determine whether removing it from the set makes at least one domain pattern unexpressible. If RateLimit can be expressed as Budget\<Operations\> composed with a temporal mechanism, or if Signal\<T\> can be expressed as AuditSink composed with a predicate filter, the primitive count should be revised downward. The methodology's value does not depend on the exact count, but intellectual honesty requires resolving the question.
+9. Resolution of the minimality question: for each primitive, determine whether removing it from the set makes at least one domain pattern unexpressible. If RateLimit can be expressed as Budget\<Operations\> composed with a temporal mechanism, or if Signal\<T\> can be expressed as AuditSink composed with a predicate filter, the primitive count should be revised. The methodology's value does not depend on the exact count, but intellectual honesty requires resolving the question.
 
-The risk profile for the computational future work (items 1-4) is low. The primitives are formally verified. The governance machinery works at 204M parameters. The open questions are training configuration tuning (epochs, regularization, thresholds) and whether efficiency gains scale as predicted. These are engineering questions with bounded cost and clear success criteria.
+10. Knowledge Plane validation at 204M. The 39M model demonstrated 84% belief injection success and 86% semantic routing accuracy. Repeating this validation at 204M against the best checkpoint (step 2,000) would confirm that the delta system scales, test injection success rate and routing accuracy at a more representative model size, and verify that the theoretical maximum deltas are practically achievable. Estimated cost: approximately $50.
+
+The risk profile for the computational future work (items 2, 3, 4, 10) is low. The primitives are formally verified. The governance machinery works at 204M parameters. The open questions are training configuration tuning and whether efficiency gains scale as predicted. The risk profile for the methodological work (items 1, 5, 6) is higher but also produces the most valuable results: either confirmation of the methodology's generality or identification of its boundaries.
 
 ---
 
-## 10. Implications
+## 11. Implications
 
-### 10.1 For Software Engineering
+### 11.1 For Software Engineering
 
-If DAC's thesis is correct, the software industry is spending enormous resources building, maintaining, testing, and securing redundant implementations of the same computational patterns across different domains. Every Kubernetes controller, every CI/CD runner, every ETL framework, every SOAR playbook engine is a reimplementation of DAG traversal under budget constraints. The maintenance cost, the security surface area, and the bug count scale linearly with the number of independent implementations. An execution framework that recognizes these four domains as the same computation with different domain functions would reduce all three by a factor equal to the number of collapsed domains.
+If DAC's thesis is correct, the software industry is spending substantial resources building, maintaining, testing, and securing redundant implementations of the same computational patterns across different domains. Every Kubernetes controller, every CI/CD runner, every ETL framework, every SOAR playbook engine is a reimplementation of DAG traversal under budget constraints. Orkestratum's architecture is one instance of the alternative: an execution framework that recognizes these domains as the same computation with different domain functions. The maintenance cost, the security surface area, and the bug count scale with the number of independent implementations; collapsing four implementations to one compounds benefits in each dimension.
 
-### 10.2 For AI/ML Systems
+### 11.2 For AI/ML Systems
 
-The identification that attention is soft competitive selection and backpropagation is a variant of graph message-passing creates a bridge between the ML optimization community and the real-time systems community. Techniques developed for efficient GPU selection (the visibility buffer, hierarchical culling, budget-constrained traversal) become candidates for efficient attention computation. Techniques developed for efficient fixed-point iteration (convergence governors, temporal amortization, adaptive iteration counts) become candidates for training loop optimization.
+The identification that attention is soft competitive selection and backpropagation is a member of the graph message-passing family creates a bridge between the ML optimization community and the real-time systems community. Techniques developed for efficient GPU selection (the visibility buffer, hierarchical culling, budget-constrained traversal) become candidates for efficient attention computation. Techniques developed for efficient fixed-point iteration (convergence governors, temporal amortization, adaptive iteration counts) become candidates for training loop optimization.
 
 The LeanFormer belief-delta system demonstrates a more immediate practical implication: the entire problem of knowledge management in neural networks (injection, removal, versioning, composition, audit) maps directly to solved database and systems engineering patterns. The Knowledge Plane architecture treats knowledge as a managed database with insert, update, delete, query, and vacuum operations. The structural identity with database management means that decades of engineering on consistency, isolation, and durability transfer directly.
 
 The confabulation detection mechanism (Section 5.7) demonstrates a different kind of transfer: a real-time systems concept (convergence-based confidence estimation) applied to an AI safety problem. The principle that "the system should be honest about uncertainty by architecture, not by training" is a direct consequence of the DAC decomposition. A system with a ConvergenceGovernor knows, structurally, whether its computation converged or not. A system without one can only guess.
 
-More broadly, the application of TLA+ and bounded model checking to ML training governance represents a contribution to the verifiable AI agenda. The ML community has largely treated training as an empirical process where correctness is assessed by outcome (did the loss go down?) rather than by invariant (were the governance properties maintained at every step?). The DAC approach inverts this: the governance properties are specified formally, verified exhaustively, and then confirmed empirically. The 204M training run demonstrated that zero budget violations, zero skipped governor states, and zero audit chain breaks can be guaranteed across thousands of training steps, even through severe overfitting. This is a different kind of assurance than "the model got a good benchmark score." It is the kind of assurance that regulated industries (healthcare, finance, defense) require before deploying AI systems, and it transfers directly from the same formal verification practices that those industries already use for non-AI systems.
+More broadly, the application of TLA+ and bounded model checking to ML training governance represents a contribution to the verifiable AI agenda. The ML community has largely treated training as an empirical process where correctness is assessed by outcome (did the loss go down?) rather than by invariant (were the governance properties maintained at every step?). The DAC approach inverts this: the governance properties are specified formally, verified exhaustively at bounded scales, and then confirmed empirically. The 204M training run demonstrated that zero budget violations, zero skipped governor states, and zero audit chain breaks can be maintained across thousands of training steps, even through severe overfitting. This is a different kind of assurance than "the model got a good benchmark score." It is the kind of assurance that regulated industries (healthcare, finance, defense) require before deploying AI systems, and it transfers from the same formal verification practices that those industries already use for non-AI systems.
 
-The targeted training system (Section 5.8) represents the deepest implication: DAC applied not to the model but to the process that produces the model. The observation that training is the only governed computational system in the collapse table operating without selectivity primitives is a structural diagnosis, not an incremental optimization. Every other domain that allocates resources under constraints uses CompetitiveSelection gating, QualityHierarchy traversal, FederatedBudget allocation, and per-group ConvergenceGovernor. The ML community has independently reinvented fragments of this composition (Mixture of Experts, LoRA, curriculum learning, layer freezing, progressive training, GradNorm) each in isolation, each in ML vocabulary that prevented recognizing the unified structural pattern. The DAC decomposition makes the pattern visible and produces a governed training pipeline where the selectivity, budgeting, convergence detection, and audit primitives compose into a closed-loop system.
+The targeted training system (Section 5.8) represents the deepest implication: DAC applied not to the model but to the process that produces the model. The observation that training is the only governed computational system in the collapse table operating without selectivity primitives is a structural diagnosis, not an incremental optimization. Every other domain that allocates resources under constraints uses CompetitiveSelection gating, QualityHierarchy traversal, FederatedBudget allocation, and per-group ConvergenceGovernor. The ML community has independently reinvented fragments of this composition (Mixture of Experts, LoRA, curriculum learning, layer freezing, progressive training, GradNorm), each in isolation, each in ML vocabulary that prevented recognizing the unified structural pattern. The DAC decomposition makes the pattern visible and produces a governed training pipeline where the selectivity, budgeting, convergence detection, and audit primitives compose into a closed-loop system.
 
-The practical consequence is that the entire model lifecycle, from data ingestion through training, evaluation, knowledge forging, and deployment, can be governed by the same primitive set. This is the same consolidation pattern documented in the DAG workload collapse (Section 7): just as CI/CD, ETL, configuration management, and SOAR are four implementations of the same DAG traversal pattern, the stages of the ML model lifecycle are compositions of the same governance primitives wearing different vocabulary. The lifecycle vocabulary (training loop, eval harness, knowledge distillation, model serving) was hiding the structural identity, and the structural identity was that every stage is a governed computation under budget constraints with convergence detection and audit.
+### 11.3 For Education
 
-### 10.3 For Education
+Domain Abstraction Collapse suggests that the most effective way to teach computation is not domain-first ("here is how rendering works," "here is how databases work," "here is how ML works") but primitive-first ("here are the seventeen operations that the computational systems in this paper are built from; now let us see how rendering, databases, and ML are each a composition of these operations"). This approach would produce engineers who recognize structural patterns across domain boundaries rather than engineers who are expert in one domain's vocabulary and blind to the identical structures in neighboring domains.
 
-Domain Abstraction Collapse suggests that the most effective way to teach computation is not domain-first ("here is how rendering works," "here is how databases work," "here is how ML works") but primitive-first ("here are the sixteen operations that all computation is built from; now let us see how rendering, databases, and ML are each a composition of these operations"). This approach would produce engineers who recognize structural patterns across domain boundaries rather than engineers who are expert in one domain's vocabulary and blind to the identical structures in neighboring domains.
+This is an aspiration, not a claim. No curriculum has been built around this approach, and the case for it rests on the methodology's demonstrated ability to enable cross-domain recognition rather than on any educational outcomes data.
 
-### 10.4 For Problem Solving
+### 11.4 For Problem Solving
 
-The generative and implementation applications of DAC (Section 5) may be the most practically valuable implication. When an engineer encounters a problem that resists solution, the question to ask is: "What is this problem when I remove the domain vocabulary?" If the stripped problem maps to the abstraction primitive set, the solution may already exist in another domain. When an engineer needs to implement a computation described in unfamiliar notation, the question is: "What are the computational steps underneath this notation, and which primitives compose to produce them?" The LeanFormer development arc (approximately three weeks from initial DAC decomposition to 204M-parameter validated results, with the first five architectural problems decomposed and built to proof-of-concept in 24 hours) suggests that when the methodology identifies a structural match, the path from problem to working solution is dramatically shorter than domain-native approaches that must solve the problem from first principles.
+The generative and implementation applications of DAC (Section 5) may be the most practically valuable implication. When an engineer encounters a problem that resists solution, the question to ask is: "What is this problem when I remove the domain vocabulary?" If the stripped problem maps to the abstraction primitive set, the solution may already exist in another domain. When an engineer needs to implement a computation described in unfamiliar notation, the question is: "What are the computational steps underneath this notation, and which primitives compose to produce them?" The LeanFormer development arc and the B=0 diagnosis episode suggest that when the methodology identifies a structural match, the path from problem to working solution is shorter than domain-native approaches that must solve the problem from first principles.
 
 ---
 
-## 11. Conclusion
+## 12. Conclusion
 
-Domain Abstraction Collapse is the systematic discovery that many domain-specific computational abstractions are the same operation wearing different vocabulary. The methodology (enumerate, strip, identify isomorphisms, reduce to abstraction primitives, reconstruct) is repeatable and has a formal completeness criterion. The abstraction primitives are defined as operations that cannot be further decomposed without losing the governance semantics that make cross-domain composition useful, distinguishing DAC from the trivially true observation that everything reduces to logic gates.
+Domain Abstraction Collapse is the systematic observation that many domain-specific computational abstractions are the same operation in different vocabulary. The methodology (enumerate, strip, identify isomorphisms, reduce to abstraction primitives, reconstruct) is repeatable and has a formal completeness criterion. The abstraction primitives are defined as operations that cannot be further decomposed without losing the governance semantics that make cross-domain composition useful, distinguishing DAC from the trivially true observation that everything reduces to logic gates.
 
-Sixteen abstraction primitives suffice for twelve domains. The Competitive Selection family accounts for a large fraction of the cross-domain mappings and decomposes honestly into three selection modes (hard, soft, ranked) that share a scoring interface but differ in allocation semantics. Some collapses in the table are genuine structural insights (attention as soft competitive selection, the four-domain DAG workload collapse, training as the only governed system without selectivity primitives). Others are trivially true (a lookup table is a lookup table). Both categories are documented.
+Seventeen abstraction primitives suffice for the twenty domains examined. Twelve of those domains were originally collapsed in the development of the methodology; eight additional domains from outside the original sample's resource-governed execution character were added in an adversarial pass that produced one new primitive (Checkpoint) and two refinements to existing primitives (widening mode on ConvergenceGovernor, explicit monotonicity on ResourceRegistry). The Competitive Selection family accounts for a large fraction of the cross-domain mappings and decomposes into three selection modes (hard, soft, ranked) that share a scoring interface but differ in allocation semantics. Some collapses in the paper's tables are genuine structural insights (attention as soft competitive selection, the four-domain DAG workload collapse, training as the only governed system without selectivity primitives). Others are trivially true (a lookup table is a lookup table). Both categories are documented, and the paper does not rely on the trivial collapses to support its central claims.
 
-LeanFormer demonstrates what DAC produces when applied to a domain. Six open problems in neural network design (parameter inefficiency, attention cost, catastrophic forgetting, knowledge composition, confabulation, and training process inefficiency), each framed as a hard ML research problem with years of dedicated literature, each became a composition of solved systems engineering primitives the moment the ML vocabulary was stripped away. The resulting architecture composes four efficiency mechanisms simultaneously, solves catastrophic forgetting by construction (bit-for-bit base weight restoration across 100 beliefs), makes confabulation architecturally detectable, and governs the entire training lifecycle with the same primitives that govern the model's architecture. The entire development arc from initial DAC decomposition to 204M-parameter validated results took approximately three weeks, one architect, and an AI implementation agent. The speed is not incidental. It is the point: when the methodology reveals that your "unsolved" problem is a solved problem wearing unfamiliar vocabulary, the path from recognition to implementation is short. At 204M parameters, all sixteen primitives composed correctly across 7,228 training steps with zero governance violations.
+Two engineering systems built on the primitive set serve as empirical validation. LeanFormer demonstrates what DAC produces when applied to a single domain. Six open problems in neural network design, each framed as a hard ML research problem with years of dedicated literature, became compositions of solved systems engineering primitives the moment the ML vocabulary was stripped away. The resulting architecture composes four efficiency mechanisms simultaneously, solves catastrophic forgetting by construction (bit-for-bit base weight restoration across 100 beliefs), makes confabulation architecturally detectable, and governs the entire training lifecycle with the same primitives that govern the model's architecture. At 204M parameters, all seventeen primitives composed correctly across 7,228 training steps with zero governance violations.
 
-The B=0 observational degeneracy discovered during the 204M run provided an unplanned but particularly compelling demonstration. When the convergence governor misidentified cold-start gradient magnitudes as post-learning convergence, applying DAC's own vocabulary-stripping methodology to the failure revealed it as an instance of a pattern already solved across the collapse table: depth buffers disambiguate zero-color pixels, heartbeats disambiguate silent nodes, timeouts disambiguate non-responsive voters. The phase-aware fix followed mechanically from the cross-domain pattern and was formally verified in TLA+ before any code was written. A methodology that can diagnose and resolve its own failures by recognizing their structural identity with solved problems from other domains is demonstrating exactly the generative capability it claims.
+Orkestratum demonstrates what DAC produces when applied to a runtime. One kernel codebase, built on the seventeen primitive modules, executes SOAR playbooks, CI/CD pipelines, ETL workflows, configuration-management runs, and a real-time renderer. Each domain is a composition of the same primitives with different domain functions and different workload graphs. No domain has its own scheduler, its own budget, or its own audit implementation. The runtime's claims are bounded to what the codebase currently supports; specific in-progress items are documented, and the paper does not claim feature completeness or performance dominance in any individual domain. What the runtime does demonstrate is that the primitives are engineerable, that they survive multi-domain contact including real-time rendering, and that a fix motivated by one domain (the phase-aware ConvergenceGovernor, developed to address an ML training bug) is available to every other domain that uses the same primitive.
 
-LeanFormer has clear limitations: modest scale, single-epoch training, two subsystems that did not activate, and no comparison against an ungoverned baseline. These are not presented as completed work. They are the identified next steps. The governance machinery works. The primitives compose correctly. The architectural insights (catastrophic forgetting as write-conflict, training as the only ungoverned system in the collapse table) hold regardless of scale. What remains is to push the implementation further: multi-epoch training to demonstrate generalization, the phase-aware governor fix to produce clean hierarchy activations, and scale validation at 7B+ parameters where the efficiency predictions become practically significant. The risk profile is low, the costs are bounded (Section 9.5), and the success criteria are clear.
+The B=0 observational degeneracy discovered during the 204M LeanFormer run provided an unplanned demonstration of DAC's generative mode. When the convergence governor misidentified cold-start gradient magnitudes as post-learning convergence, applying DAC's own vocabulary-stripping methodology to the failure revealed it as an instance of a pattern already solved across the collapse table: depth buffers disambiguate zero-color pixels, heartbeats disambiguate silent nodes, timeouts disambiguate non-responsive voters. The phase-aware fix followed mechanically from the cross-domain pattern and was formally verified in TLA+ before any code was written. A methodology that diagnoses its own failures by recognizing their structural identity with solved problems from other domains is demonstrating the generative capability it claims.
 
-The extension from model architecture to model lifecycle is the strongest evidence that DAC's primitive set is sufficient across the examined domains. The same sixteen primitives that express how attention works also express how training should be governed, how evaluation should be triggered, and how knowledge should be forged. The vocabulary was different at every stage. The structure was always the same.
+The primitives are formally verified mathematical structures at the tested bounds. TLA+ specifications were verified by the TLC model checker across approximately 45.4 million states. Every invariant held. Every decomposition produced a concrete counterexample proving operational irreducibility. A real training bug was reproduced as a TLC counterexample in two states and fixed with a phase-aware governor verified across 18.6 million states. The verification process challenged five initial assumptions about the specifications and produced corrections that refined imprecise classifications without weakening any claim. These corrections demonstrate that the primitives survived adversarial scrutiny from a tool that does not share the author's assumptions, biases, or vocabulary.
 
-The primitives are not artifacts of any particular programming language or codebase. Appendix A demonstrates all sixteen primitives implemented in Rust, Python, Go, and TypeScript across multiple domains. The same loop, the same invariant, the same state machine appears in every language. The vocabulary was different. The language was different. The code was the same.
+What this paper claims, and what it does not: the primitive set is sufficient for twenty domains and operationally irreducible by formal verification. Algebraic minimality remains open. Cross-domain optimization transfer has been demonstrated in one direction (systems-to-ML) and within the Orkestratum runtime; full bidirectional transfer across all domains remains future work. The LeanFormer 204M run demonstrates governance correctness, not production-scale efficiency gains; the scale validation at 7B+ parameters is the single most important next step. Orkestratum's claim is that one runtime serves five domains with the same primitives, not that the runtime is feature-complete or performance-dominant in any individual domain. Independent replication of the methodology by other researchers is the strongest form of validation and has not yet occurred.
 
-The primitives are not merely empirically useful patterns. They are formally verified mathematical structures. Forty-two TLA+ specifications (nineteen primitives, five compositions, eighteen decomposition failures) were verified by the TLC model checker across approximately 45.4 million states. Every invariant held. Every decomposition produced a concrete counterexample proving operational irreducibility. A real training bug (B=0 initialization causing premature convergence detection) was reproduced as a TLC counterexample in 2 states and fixed with a phase-aware governor verified across 18.6 million states — DAC applied to its own governance system, using the same observational degeneracy pattern that the collapse table documents across rendering, networking, and consensus. The verification process challenged five initial assumptions about the specifications and produced corrections that refined imprecise classifications without weakening any falsified claim. The corrections demonstrate that the primitives survived adversarial scrutiny from a tool that does not share the author's assumptions, biases, or vocabulary.
+What the paper does claim is that the structural skeleton underlying the examined domains is shared, that the domain-specific vocabulary is the primary obstacle to recognizing this, and that a small set of primitives at a specific level of governance semantics suffices to express the computational content of all twenty domains examined. The operations are familiar. The unification at this specific level, with this specific set, is not.
 
-The intelligence is in the primitives and their composition. Not in the domain vocabulary. The vocabulary was always clothing. The structure was always the same.
+The intelligence in a domain lives in its function — the rendering equation, the attention scoring function, the unification consistency check, the constraint propagation rule. The governance infrastructure around the domain function is shared. The vocabulary at the infrastructure level was clothing. The structure underneath the clothing was, across every domain examined in this paper, the same.
 
 ---
 
 ## Acknowledgments
 
-The LeanFormer architecture and targeted training system were implemented using Claude Code as an AI implementation agent, with the architect maintaining design authority, formal specification, and verification discipline. The human-as-architect / AI-as-implementation-agent development model produced a working, tested system governed by the DAC primitive set, serving as evidence that the methodology is reproducible and not tied to a specific implementation context.
-
-The verification discipline that enabled this: requiring log evidence rather than diff evidence, enforcing strict scope boundaries per fix, hostile audit protocols that re-read source rather than trust summaries, and a firm policy against accepting "looks right" as a verification outcome.
+LeanFormer and Orkestratum were implemented using an AI coding assistant (Claude Code) as an implementation agent, with the architect maintaining design authority, formal specification responsibility, and verification discipline. This development model and its attendant risks are discussed in Section 5.2. The mitigations against "plausible-looking code against plausible-looking specifications" are explicit: hostile audit protocols that require log evidence rather than diff evidence, formal specifications in TLA+ that the implementation must refine, continuous measurement of governance invariants during training, and a conformance audit program for the Orkestratum runtime with line-number traces to the specifications. The reproducibility of the engineering results depends on these mitigations being applied; the paper identifies the refinement verification program as specific future work (Section 10.5, item 7).
 
 ---
 
@@ -948,15 +1156,11 @@ The verification discipline that enabled this: requiring log evidence rather tha
 
 ---
 
-## Appendix A: The Sixteen Primitives in Code
+## Appendix A: The Seventeen Primitives in Code
 
 ### Cross-Domain, Cross-Language Implementation Examples
 
-Each primitive is shown in multiple languages and multiple domains to demonstrate that the structure is identical and only the domain-specific types and functions change. The primitive does not know which domain it serves. The domain provides the types and the scoring function. The primitive provides the governance.
-
----
-
-### Data Primitives
+Each primitive can be implemented in multiple languages to demonstrate that the structure is expressible in multiple imperative paradigms and that only the domain-specific types and functions change. This appendix shows representative implementations. The caveat stated in Section 2.2 applies: showing multiple imperative implementations demonstrates language-portability within a paradigm; the stronger claim (that the primitives are language-paradigm-independent) would require implementations in languages with fundamentally different computational models and is not made here.
 
 ---
 
@@ -964,7 +1168,7 @@ Each primitive is shown in multiple languages and multiple domains to demonstrat
 
 A pool with a capacity and an invariant: consumed <= capacity. There is no force_allocate.
 
-Rust (VRAM bytes):
+Rust:
 
 ```rust
 pub struct Budget<U: Copy + Ord + Default + AddAssign + SubAssign> {
@@ -989,7 +1193,7 @@ impl<U: Copy + Ord + Default + AddAssign + SubAssign> Budget<U> {
 }
 ```
 
-Python (gradient compute budget):
+Python:
 
 ```python
 class Budget:
@@ -1007,7 +1211,7 @@ class Budget:
         self.allocated -= amount
 ```
 
-Go (Kubernetes CPU millicores):
+Go:
 
 ```go
 type Budget struct {
@@ -1016,63 +1220,23 @@ type Budget struct {
 }
 
 func (b *Budget) TryAllocate(amount int64) bool {
-    if b.allocated+amount > b.capacity { return false }
+    if b.allocated + amount > b.capacity {
+        return false
+    }
     b.allocated += amount
     return true
 }
 
-func (b *Budget) Release(amount int64) { b.allocated -= amount }
-```
-
-The invariant is identical. The language is different. The domain (VRAM, gradient compute, CPU) is different. The four lines that enforce the ceiling do not change.
-
----
-
-The remaining fourteen primitives (FederatedBudget, QualityHierarchy, AllocationSnapshot, RelationshipGraph, ResourceRegistry, TraversalEngine, PropagationPass, CompetitiveSelection in all three modes, ActuationPass, Reduction, Sampler, Signal, RateLimit, and AuditSink) follow the same pattern: identical structure across languages, with only the domain-specific types and functions changing. The complete set of cross-language implementations is available in the project repository. One additional example is included here because of its centrality to the paper's strongest empirical result (Section 5.8.1).
-
-
----
-
-#### A.15 ConvergenceGovernor
-
-Detect fixed-point convergence and govern iteration count. The four-state machine: ACTIVE (still changing), COOLING (change rate declining), CONVERGED (stable), AWAKENED (reconverged after perturbation).
-
-Rust (physics constraint solver):
-
-```rust
-pub enum ConvergenceState { Active, Cooling, Converged, Awakened }
-
-pub struct ConvergenceGovernor {
-    state: ConvergenceState,
-    delta_history: VecDeque<f64>,
-    threshold: f64,
-}
-
-impl ConvergenceGovernor {
-    pub fn update(&mut self, delta: f64) -> ConvergenceState {
-        self.delta_history.push_back(delta);
-        if self.delta_history.len() > 5 { self.delta_history.pop_front(); }
-
-        let avg_delta: f64 = self.delta_history.iter().sum::<f64>()
-            / self.delta_history.len() as f64;
-
-        self.state = match self.state {
-            ConvergenceState::Active if avg_delta < self.threshold * 2.0
-                => ConvergenceState::Cooling,
-            ConvergenceState::Cooling if avg_delta < self.threshold
-                => ConvergenceState::Converged,
-            ConvergenceState::Converged if avg_delta > self.threshold * 3.0
-                => ConvergenceState::Awakened,
-            ConvergenceState::Awakened if avg_delta < self.threshold
-                => ConvergenceState::Converged,
-            other => other,
-        };
-        self.state
-    }
+func (b *Budget) Release(amount int64) {
+    b.allocated -= amount
 }
 ```
 
-Python (per-group training convergence):
+The invariant (allocated <= capacity) is enforced identically in all three. The type of U is domain-specific (VRAM bytes, gradient compute, CPU millicores). The invariant is not.
+
+#### A.2 ConvergenceGovernor (four-state machine)
+
+Python:
 
 ```python
 class ConvergenceGovernor:
@@ -1137,11 +1301,40 @@ func (g *ConvergenceGovernor) Update(delta float64) ConvergenceState {
 }
 ```
 
-The four-state machine is identical. The delta (constraint residual, gradient magnitude, term change rate) is the domain.
+The four-state machine is identical. The delta (constraint residual, gradient magnitude, term change rate) is the domain-specific part.
 
+#### A.3 Checkpoint (new in v8)
+
+A scoped rollback boundary with stack discipline. Nested scopes unwind in LIFO order. This primitive is required for CLP-style backtracking and theorem proving search. The composition AuditSink + reverse-replay ActuationPass does not satisfy the atomicity required for safe nested unwinding under concurrent mutation; TLC verified this with a concrete counterexample.
+
+Python:
+
+```python
+class Checkpoint:
+    def __init__(self, state_ref):
+        self.stack = []
+        self.state_ref = state_ref
+
+    def begin(self):
+        self.stack.append(copy.deepcopy(self.state_ref.get()))
+
+    def commit(self):
+        if not self.stack:
+            raise RuntimeError("commit with no active checkpoint")
+        self.stack.pop()
+
+    def rollback(self):
+        if not self.stack:
+            raise RuntimeError("rollback with no active checkpoint")
+        self.state_ref.set(self.stack.pop())
+```
+
+The invariant is stack well-formedness: begin, commit, and rollback preserve LIFO discipline; rollback reverts to the exact state snapshotted at begin. The domain-specific part is the state representation and the equality semantics.
+
+Note: This Python example uses deepcopy for illustrative simplicity. A production implementation would achieve the required O(1) Checkpoint isolation via persistent data structures, copy-on-write semantics, or inverse-delta logging.
 
 ### The Pattern
 
 Every example in this appendix demonstrates the same property: the domain provides the types, the data, and the scoring/aggregation/message functions. The primitive provides the structure, the governance, and the invariants. Swap the domain function and the primitive serves a different domain without modification.
 
-The vocabulary was different. The language was different. The code was the same.
+The vocabulary was different. The language was different. The code was the same, within the family of imperative paradigms. Implementations in functional, logic, and declarative paradigms are not shown here, and the paper does not claim paradigm-independence from four imperative examples. That claim requires evidence that has not been produced.
