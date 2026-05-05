@@ -1,4 +1,4 @@
-# Domain Abstraction Collapse - DRAFT
+# Domain Abstraction Collapse DRAFT
 
 ## A Methodology for Recognizing Solved Problems Across Domain Boundaries
 
