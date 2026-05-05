@@ -1,17 +1,21 @@
-# Appendix D: Irreducibility Proofs by Decomposition Failure
+# Appendix D: Atomicity Dependence of Primitive Invariants
 
 ## The Argument
 
-Section 1.3 of the paper defines an abstraction primitive as an operation that cannot be further decomposed without losing governance semantics. Appendix B specifies the invariants each primitive must satisfy. This appendix proves irreducibility empirically: for each primitive, we decompose it into plausible sub-operations, run TLC, and demonstrate that the model checker finds a reachable state where the invariant is violated.
+Section 1.3 of the paper defines an abstraction primitive as an operation that cannot be further decomposed without losing governance semantics. Appendix B specifies the invariants each primitive must satisfy. This appendix establishes empirically that those invariants depend on atomicity at the primitive boundary: for each primitive, we factor it into separable check-then-act steps in a context with a concurrent actor, run TLC, and exhibit a concrete reachable state where the invariant is violated.
+
+The result this appendix supports is bounded and concrete. It is not a proof of algebraic minimality (no primitive in the set is expressible as a composition of the others); that question remains open and is discussed in Section 9.1. It is the systematic demonstration that every primitive in the set carries an atomicity-dependent invariant that fails under the standard check-then-act decomposition. The property that atomic operations fail their atomicity-dependent invariants when atomicity is removed in concurrent contexts is a known consequence of how atomicity works generally; what is new here is the systematic application of that decomposition technique to all sixteen primitives, with concrete counterexamples produced by an unbiased model checker rather than imagined ones.
+
+The practical consequence: each primitive's guard and its guarded operation are one transactional unit. They are the boundary at which formal verification can be applied, because below that boundary the invariant ceases to hold. This is what justifies treating the primitives as the unit of formal specification in Appendix B and as the unit of composition in Appendix C.
 
 Each section follows the same structure:
 
 1. The primitive and its invariant (from Appendix B)
-2. The decomposition: a plausible factoring into simpler operations
+2. The decomposition: a plausible factoring into separable check and act steps
 3. Why the decomposition looks reasonable (it is not a straw man)
 4. The TLA+ spec with the decomposition applied
-5. The expected counterexample: the interleaving TLC finds where the invariant breaks
-6. What this means: why the guard and the guarded operation are one irreducible unit
+5. The counterexample TLC produces
+6. What this means for the primitive's atomic boundary
 
 The counterexamples are not hypothetical. TLC produces them as concrete state traces. The traces are reproducible. Anyone with the TLA+ toolbox can run these specs and observe the violations.
 
@@ -1164,7 +1168,7 @@ Expected counterexample: Register("belief_1", delta_A) then Register("belief_1",
 
 ---
 
-## Summary: The Irreducibility Table
+## Summary: The Atomicity Dependence Table
 
 | Primitive | Decomposition Attempted | Invariant Violated | Failure Mode |
 |-----------|------------------------|-------------------|-------------|
@@ -1188,4 +1192,4 @@ Expected counterexample: Register("belief_1", delta_A) then Register("belief_1",
 
 Every decomposition produces a concrete counterexample. Every counterexample is a state that TLC reaches by exploring all legal interleavings. Every counterexample demonstrates a real failure mode that would manifest in any implementation that decomposes the primitive.
 
-The primitives are irreducible because their invariants require atomicity. The guard and the guarded operation are one thing. Separate them and the guarantee disappears.
+The primitives carry atomicity-dependent invariants at their boundaries. The guard and the guarded operation are one transactional unit. Separate them and the guarantee disappears.
